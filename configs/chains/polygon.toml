@@ -1,0 +1,4 @@
+chain_id = 137
+rpc_http = "https://polygon.example"
+rpc_ws   = "wss://polygon.example/ws"
+confirmations = 1

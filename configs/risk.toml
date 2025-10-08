@@ -1,0 +1,9 @@
+[guards]
+max_position_usd = 1500
+max_per_token_usd = 500
+cooldown_secs = 30
+max_slippage_bps = 300
+
+[checks]
+honeypot_sell_test = true
+lp_locked_min_days = 7

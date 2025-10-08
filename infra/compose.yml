@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  nats:
+    image: nats:2
+    command: ["-js","-m","8222"]
+    ports: ["4222:4222","8222:8222"]
+  gateway:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.svc-gateway
+    environment: [ "RUST_LOG=info" ]
+    depends_on: [ nats ]
+    ports: ["8080:8080"]
+  signals:
+    build: { context: .., dockerfile: infra/docker/Dockerfile.svc-signals }
+    environment: [ "RUST_LOG=info" ]
+    depends_on: [ nats ]
+  strategy:
+    build: { context: .., dockerfile: infra/docker/Dockerfile.svc-strategy }
+    environment: [ "RUST_LOG=info" ]
+    depends_on: [ nats ]
+  executor:
+    build: { context: .., dockerfile: infra/docker/Dockerfile.svc-executor }
+    environment: [ "RUST_LOG=info" ]
+    depends_on: [ nats ]

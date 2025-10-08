@@ -1,0 +1,17 @@
+[mesh]
+enabled = false
+mtls = false
+
+[bus]
+kind = "memory"   # memory | nats | kafka
+nats_url = "${NATS_URL}"
+
+[routing]
+region = "local"
+latency_based = false
+
+[execution]
+modes = ["bundle","private","mempool"]
+fallback_chain = ["bundle->private->mempool"]
+replacement_ttl_secs = 30
+rbf_retry_secs = 8

@@ -1,0 +1,4 @@
+chain_id = 56
+rpc_http = "https://bsc.example"
+rpc_ws   = "wss://bsc.example/ws"
+confirmations = 1

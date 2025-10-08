@@ -1,0 +1,6 @@
+chain_id = 1
+rpc_http = "${RPC_HTTP}"
+rpc_ws   = "${RPC_WS}"
+private_rpc_http = "${PRIVATE_RPC_HTTP}"
+flashbots_url = "${FLASHBOTS_URL}"
+confirmations = 1

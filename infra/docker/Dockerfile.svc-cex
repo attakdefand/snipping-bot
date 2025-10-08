@@ -1,0 +1,11 @@
+FROM rust:1.80 as build
+WORKDIR /app
+COPY . .
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && \
+    cargo build --release -p svc-cex
+
+FROM debian:stable-slim
+WORKDIR /app
+COPY --from=build /app/target/release/svc-cex /usr/local/bin/svc-cex
+ENV RUST_LOG=info
+CMD ["svc-cex"]

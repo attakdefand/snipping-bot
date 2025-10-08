@@ -1,0 +1,3 @@
+# Hints for preferred routers/factories per chain
+[ethereum]
+default_router = "0x0000000000000000000000000000000000000000"

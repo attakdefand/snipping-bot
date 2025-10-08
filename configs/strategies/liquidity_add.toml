@@ -1,0 +1,10 @@
+[signal]
+trigger = "example"
+
+[execution]
+mode = "mempool"
+
+[exit]
+take_profit_pct = 15
+stop_loss_pct = 10
+trailing_pct = 5

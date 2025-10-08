@@ -1,0 +1,11 @@
+[package]
+name = "sniper-telemetry"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }

@@ -1,0 +1,46 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/sniper-core","crates/sniper-keys","crates/sniper-chain","crates/sniper-signals",
+  "crates/sniper-amm","crates/sniper-risk","crates/sniper-sim","crates/sniper-exec",
+  "crates/sniper-exit","crates/sniper-nft","crates/sniper-cex","crates/sniper-telemetry",
+  "crates/sniper-storage","crates/sniper-policy",
+  "crates/svc-gateway","crates/svc-signals","crates/svc-strategy","crates/svc-executor",
+  "crates/svc-risk","crates/svc-nft","crates/svc-cex","crates/svc-policy","crates/svc-storage"
+]
+
+[workspace.package]
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.80"
+
+[workspace.dependencies]
+anyhow = "1"
+thiserror = "2"
+serde = { version="1", features=["derive"] }
+serde_json = "1"
+toml = "0.8"
+dotenvy = "0.15"
+tracing = "0.1"
+tracing-subscriber = { version="0.3", features=["env-filter","fmt","json"] }
+tokio = { version="1", features=["rt-multi-thread","macros","time","sync"] }
+futures = "0.3"
+clap = { version="4", features=["derive"] }
+reqwest = { version="0.12", features=["json","gzip","brotli"] }
+url = "2"
+eyre = "0.6"
+hex = "0.4"
+# ethers kept out for now to keep fast compile; add later
+prometheus = "0.13"
+opentelemetry = { version="0.24", features=["rt-tokio"] }
+opentelemetry-otlp = "0.17"
+axum = "0.7"
+tonic = "0.12"
+tower = "0.5"
+tower-http = { version="0.5", features=["cors","trace","compression-full"] }
+sqlx = { version="0.7", features=["runtime-tokio-rustls","postgres","sqlite","uuid","migrate"] }
+redis = { version="0.25", features=["tokio-comp"] }
+time = "0.3"
+async-trait = "0.1"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
