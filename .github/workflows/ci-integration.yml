@@ -1,0 +1,102 @@
+name: CI - Integration / E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_redis:
+        description: "Enable Redis integration tests"
+        required: false
+        default: "false"
+      run_db:
+        description: "Enable DB integration tests"
+        required: false
+        default: "false"
+  push:
+    branches: [ main ]
+
+env:
+  RUSTUP_TOOLCHAIN: stable
+  REDIS_URL: redis://127.0.0.1:6379
+  POSTGRES_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust + components
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          override: true
+
+      - name: Wait for services
+        run: |
+          ./ci/wait-for-service.sh 127.0.0.1 6379 20 || true
+          ./ci/wait-for-service.sh 127.0.0.1 5432 30 || true
+
+      - name: Run integration tests (gated)
+        env:
+          RUN_REDIS_TESTS: ${{ github.event.inputs.run_redis == 'true' || env.RUN_REDIS_TESTS == 'true' }}
+          RUN_DB_TESTS: ${{ github.event.inputs.run_db == 'true' || env.RUN_DB_TESTS == 'true' }}
+        run: |
+          # Example: run integration tests for a crate that uses Redis if enabled
+          if [ "${RUN_REDIS_TESTS}" = "true" ]; then
+            echo "Running Redis-backed integration tests"
+            cargo test -p sniper-storage -- --nocapture
+          else
+            echo "Skipping Redis integration tests"
+          fi
+
+          if [ "${RUN_DB_TESTS}" = "true" ]; then
+            echo "Running DB-backed integration tests"
+            cargo test -p some_db_crate -- --nocapture
+          else
+            echo "Skipping DB integration tests"
+          fi
+
+      - name: Upload integration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-logs
+          path: target
+
+      - name: Notify (Telegram)
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          STATUS="${{ job.status }}"
+          MSG="CI-Integration: $STATUS\nRepo: ${{ github.repository }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+              --data-urlencode "text=${MSG}"
+          else
+            echo "$MSG"
+          fi

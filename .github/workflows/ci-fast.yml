@@ -1,0 +1,78 @@
+name: CI - Fast checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  RUSTUP_TOOLCHAIN: stable
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust toolchain + components
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          override: true
+
+      - name: Formatting check
+        run: cargo fmt --all -- --check
+
+      - name: Lint (clippy)
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: SCA / Vulnerability scan (cargo-audit)
+        run: |
+          cargo install cargo-audit --locked --force || true
+          cargo audit
+
+      - name: Build (release)
+        run: cargo build --workspace --release
+
+      - name: Compile-check (fast)
+        run: cargo check --workspace --all-features
+
+      - name: Unit tests
+        run: cargo test --workspace --lib -- --nocapture
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-ci-target
+          path: target
+
+      - name: Telegram / Fallback notification
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          RESULT="success"
+          if [ "${{ job.status }}" != "success" ]; then RESULT="failure"; fi
+          MSG="CI Fast: $RESULT\nRepo: ${{ github.repository }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "${TELEGRAM_BOT_TOKEN}" ] && [ -n "${TELEGRAM_CHAT_ID}" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+              --data-urlencode "text=${MSG}" >/dev/null
+          else
+            echo "$MSG"
+          fi

@@ -1,0 +1,76 @@
+name: CI - Nightly heavy checks
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # run daily at 02:00 UTC
+  workflow_dispatch:
+
+env:
+  RUSTUP_TOOLCHAIN: nightly
+
+jobs:
+  heavy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain + components
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy, miri
+          override: true
+
+      - name: Install tooling (cargo-fuzz, tarpaulin, cargo-mutants)
+        run: |
+          rustup component add llvm-tools-preview || true
+          cargo install cargo-fuzz --locked || true
+          cargo install cargo-mutants --locked || true
+          cargo install cargo-tarpaulin --locked || true
+
+      - name: Run fuzz (short)
+        run: |
+          # Run a short fuzz session per fuzzer target (adjust names)
+          timeout 10m bash -c 'cargo fuzz run fuzz_target_one || true'
+
+      - name: Run mutation testing (quick subset)
+        run: |
+          # Run cargo-mutants in a quick mode (tailor to your repo)
+          cargo mutants --unit-test-threads 2 --timeout 300 || true
+
+      - name: Coverage (tarpaulin)
+        run: |
+          cargo tarpaulin --out Xml || true
+        continue-on-error: true
+
+      - name: Perf smoke (k6 script)
+        run: |
+          if [ -f ci/perf/k6-script.js ]; then
+            docker run --rm -i loadimpact/k6 run - < ci/perf/k6-script.js || true
+          else
+            echo "No perf script, skipping"
+          fi
+
+      - name: Upload heavy artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: heavy-ci-artifacts
+          path: target
+
+      - name: Notify (Telegram)
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          STATUS="${{ job.status }}"
+          MSG="CI-Nightly: $STATUS\nRepo: ${{ github.repository }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+              --data-urlencode "text=${MSG}"
+          else
+            echo "$MSG"
+          fi
