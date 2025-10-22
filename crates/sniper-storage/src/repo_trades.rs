@@ -1,5 +1,5 @@
 //! Trade repository for the sniper bot.
-//! 
+//!
 //! This module provides functionality for storing and retrieving trade information.
 
 use anyhow::Result;
@@ -28,7 +28,7 @@ pub struct Trade {
     pub price: f64,
     pub amount: f64,
     pub status: TradeStatus,
-    pub created_at: u64, // Unix timestamp
+    pub created_at: u64,          // Unix timestamp
     pub executed_at: Option<u64>, // Unix timestamp
     pub tx_hash: Option<String>,
 }
@@ -46,32 +46,32 @@ impl TradeRepo {
             trades: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     /// Create a new trade
     pub async fn create(&self, trade: &Trade) -> Result<Uuid> {
         let mut trades = self.trades.write().await;
         trades.insert(trade.id, trade.clone());
         Ok(trade.id)
     }
-    
+
     /// Get a trade by ID
     pub async fn get_by_id(&self, id: Uuid) -> Result<Option<Trade>> {
         let trades = self.trades.read().await;
         Ok(trades.get(&id).cloned())
     }
-    
+
     /// Update a trade
     pub async fn update(&self, trade: &Trade) -> Result<()> {
         let mut trades = self.trades.write().await;
         trades.insert(trade.id, trade.clone());
         Ok(())
     }
-    
+
     /// List trades for a user
     pub async fn list_trades(&self, user_id: &str, limit: usize) -> Result<Vec<Trade>> {
         let trades = self.trades.read().await;
         let mut result = Vec::new();
-        
+
         for trade in trades.values() {
             if trade.user_id == user_id {
                 result.push(trade.clone());
@@ -80,7 +80,7 @@ impl TradeRepo {
                 }
             }
         }
-        
+
         Ok(result)
     }
 }
@@ -98,7 +98,7 @@ mod tests {
     #[tokio::test]
     async fn test_trade_repo() -> Result<()> {
         let repo = TradeRepo::new();
-        
+
         let trade = Trade {
             id: Uuid::new_v4(),
             user_id: "user1".to_string(),
@@ -111,11 +111,11 @@ mod tests {
             executed_at: None,
             tx_hash: None,
         };
-        
+
         // Test create
         let id = repo.create(&trade).await?;
         assert_eq!(id, trade.id);
-        
+
         // Test get by id
         let retrieved = repo.get_by_id(id).await?;
         assert!(retrieved.is_some());
@@ -124,12 +124,12 @@ mod tests {
         assert_eq!(retrieved.symbol, "BTC/USDT");
         assert_eq!(retrieved.side, "buy");
         assert_eq!(retrieved.price, 50000.0);
-        
+
         // Test list trades
         let trades = repo.list_trades("user1", 10).await?;
         assert_eq!(trades.len(), 1);
         assert_eq!(trades[0].id, id);
-        
+
         Ok(())
     }
 }

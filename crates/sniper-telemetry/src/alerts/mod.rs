@@ -1,9 +1,9 @@
 //! Alerting module for the sniper bot.
-//! 
+//!
 //! This module provides functionality for sending alerts through various channels.
 
-pub mod telegram;
 pub mod slack;
+pub mod telegram;
 pub mod webhook;
 
 use anyhow::Result;
@@ -28,11 +28,12 @@ impl AlertManager {
     pub fn new() -> Result<Self> {
         Ok(Self {})
     }
-    
+
     /// Send an alert through all configured channels
     pub async fn send_alert(&self, message: &str, severity: AlertSeverity) -> Result<()> {
         // In a real implementation, this would send alerts through Telegram, Slack, Webhook, etc.
-        println!("ALERT [{}]: {}", 
+        println!(
+            "ALERT [{}]: {}",
             match severity {
                 AlertSeverity::Info => "INFO",
                 AlertSeverity::Warning => "WARNING",

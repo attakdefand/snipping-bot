@@ -1,1 +1,2 @@
-pub fn placeholder() { /* TODO: implement */ }
+pub fn placeholder() { /* TODO: implement */
+}

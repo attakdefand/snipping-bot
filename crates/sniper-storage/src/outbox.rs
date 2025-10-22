@@ -1,5 +1,5 @@
 //! Outbox pattern implementation for idempotency.
-//! 
+//!
 //! This module provides functionality for ensuring exactly-once processing
 //! of events through the outbox pattern with idempotency keys.
 
@@ -23,10 +23,10 @@ pub enum OutboxStatus {
 pub struct OutboxMessage {
     pub id: Uuid,
     pub idempotency_key: String,
-    pub payload: String, // JSON payload
+    pub payload: String,     // JSON payload
     pub destination: String, // Where to send the message
     pub status: OutboxStatus,
-    pub created_at: u64, // Unix timestamp
+    pub created_at: u64,           // Unix timestamp
     pub processed_at: Option<u64>, // Unix timestamp
     pub retry_count: i32,
 }
@@ -46,29 +46,29 @@ impl OutboxRepo {
             idempotency_keys: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     /// Create a new outbox message
     pub async fn create(&self, message: &OutboxMessage) -> Result<Uuid> {
         let mut messages = self.messages.write().await;
         let mut idempotency_keys = self.idempotency_keys.write().await;
-        
+
         messages.insert(message.id, message.clone());
         idempotency_keys.insert(message.idempotency_key.clone(), message.id);
-        
+
         Ok(message.id)
     }
-    
+
     /// Check if a message with the given idempotency key already exists
     pub async fn exists_by_idempotency_key(&self, idempotency_key: &str) -> Result<bool> {
         let idempotency_keys = self.idempotency_keys.read().await;
         Ok(idempotency_keys.contains_key(idempotency_key))
     }
-    
+
     /// Get pending messages
     pub async fn get_pending_messages(&self, limit: usize) -> Result<Vec<OutboxMessage>> {
         let messages = self.messages.read().await;
         let mut result = Vec::new();
-        
+
         for message in messages.values() {
             if matches!(message.status, OutboxStatus::Pending) {
                 result.push(message.clone());
@@ -77,10 +77,10 @@ impl OutboxRepo {
                 }
             }
         }
-        
+
         Ok(result)
     }
-    
+
     /// Mark a message as processed
     pub async fn mark_as_processed(&self, id: Uuid, processed_at: u64) -> Result<()> {
         let mut messages = self.messages.write().await;
@@ -90,7 +90,7 @@ impl OutboxRepo {
         }
         Ok(())
     }
-    
+
     /// Mark a message as failed
     pub async fn mark_as_failed(&self, id: Uuid) -> Result<()> {
         let mut messages = self.messages.write().await;
@@ -115,7 +115,7 @@ mod tests {
     #[tokio::test]
     async fn test_outbox_repo() -> Result<()> {
         let repo = OutboxRepo::new();
-        
+
         let message = OutboxMessage {
             id: Uuid::new_v4(),
             idempotency_key: "test_key_1".to_string(),
@@ -126,29 +126,29 @@ mod tests {
             processed_at: None,
             retry_count: 0,
         };
-        
+
         // Test create
         let id = repo.create(&message).await?;
         assert_eq!(id, message.id);
-        
+
         // Test exists by idempotency key
         let exists = repo.exists_by_idempotency_key("test_key_1").await?;
         assert!(exists);
-        
+
         let exists = repo.exists_by_idempotency_key("nonexistent_key").await?;
         assert!(!exists);
-        
+
         // Test get pending messages
         let pending = repo.get_pending_messages(10).await?;
         assert_eq!(pending.len(), 1);
         assert_eq!(pending[0].idempotency_key, "test_key_1");
-        
+
         // Test mark as processed
         repo.mark_as_processed(id, 1234567900).await?;
-        
+
         let pending = repo.get_pending_messages(10).await?;
         assert_eq!(pending.len(), 0);
-        
+
         Ok(())
     }
 }

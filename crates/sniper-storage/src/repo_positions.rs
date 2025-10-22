@@ -1,5 +1,5 @@
 //! Position repository for the sniper bot.
-//! 
+//!
 //! This module provides functionality for storing and retrieving position information.
 
 use anyhow::Result;
@@ -29,8 +29,8 @@ pub struct Position {
     pub amount: f64,
     pub leverage: f64,
     pub status: PositionStatus,
-    pub created_at: u64, // Unix timestamp
-    pub updated_at: u64, // Unix timestamp
+    pub created_at: u64,        // Unix timestamp
+    pub updated_at: u64,        // Unix timestamp
     pub closed_at: Option<u64>, // Unix timestamp
 }
 
@@ -47,38 +47,38 @@ impl PositionRepo {
             positions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     /// Create a new position
     pub async fn create(&self, position: &Position) -> Result<Uuid> {
         let mut positions = self.positions.write().await;
         positions.insert(position.id, position.clone());
         Ok(position.id)
     }
-    
+
     /// Get a position by ID
     pub async fn get_by_id(&self, id: Uuid) -> Result<Option<Position>> {
         let positions = self.positions.read().await;
         Ok(positions.get(&id).cloned())
     }
-    
+
     /// Update a position
     pub async fn update(&self, position: &Position) -> Result<()> {
         let mut positions = self.positions.write().await;
         positions.insert(position.id, position.clone());
         Ok(())
     }
-    
+
     /// List open positions for a user
     pub async fn list_open_positions(&self, user_id: &str) -> Result<Vec<Position>> {
         let positions = self.positions.read().await;
         let mut result = Vec::new();
-        
+
         for position in positions.values() {
             if position.user_id == user_id && matches!(position.status, PositionStatus::Open) {
                 result.push(position.clone());
             }
         }
-        
+
         Ok(result)
     }
 }
@@ -96,7 +96,7 @@ mod tests {
     #[tokio::test]
     async fn test_position_repo() -> Result<()> {
         let repo = PositionRepo::new();
-        
+
         let position = Position {
             id: Uuid::new_v4(),
             user_id: "user1".to_string(),
@@ -111,11 +111,11 @@ mod tests {
             updated_at: 1234567890,
             closed_at: None,
         };
-        
+
         // Test create
         let id = repo.create(&position).await?;
         assert_eq!(id, position.id);
-        
+
         // Test get by id
         let retrieved = repo.get_by_id(id).await?;
         assert!(retrieved.is_some());
@@ -124,12 +124,12 @@ mod tests {
         assert_eq!(retrieved.symbol, "BTC/USDT");
         assert_eq!(retrieved.side, "buy");
         assert_eq!(retrieved.entry_price, 50000.0);
-        
+
         // Test list open positions
         let open_positions = repo.list_open_positions("user1").await?;
         assert_eq!(open_positions.len(), 1);
         assert_eq!(open_positions[0].id, id);
-        
+
         Ok(())
     }
 }
