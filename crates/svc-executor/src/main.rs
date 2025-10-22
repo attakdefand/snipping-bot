@@ -1,5 +1,5 @@
-use sniper_core::{bus::InMemoryBus, prelude::*};
-use sniper_core::types::{Signal, TradePlan, Decision, ExecReceipt};
+use sniper_core::types::{Decision, ExecReceipt, TradePlan};
+use sniper_core::bus::InMemoryBus;
 use tokio::time::{sleep, Duration};
 
 #[tokio::main]
@@ -19,23 +19,27 @@ async fn main() -> eyre::Result<()> {
         loop {
             if let Ok(bytes) = rx.recv().await {
                 if let Ok(plan) = serde_json::from_slice::<TradePlan>(&bytes) {
-                    tracing::info!("received trade plan for {} on {}", plan.token_out, plan.chain.name);
-                    
+                    tracing::info!(
+                        "received trade plan for {} on {}",
+                        plan.token_out,
+                        plan.chain.name
+                    );
+
                     // In a real implementation, this would:
                     // 1. Send the plan to the risk service for evaluation
                     // 2. If approved, execute the trade via the appropriate execution method
                     // 3. Publish the execution result
-                    
+
                     // Simulate risk check
                     let decision = Decision {
                         allow: true,
                         reasons: vec!["simulation - all checks passed".to_string()],
                     };
-                    
+
                     if decision.allow {
                         // Execute the trade
                         let receipt = execute_trade(&plan).await;
-                        
+
                         // Publish the execution result
                         let _ = rx_bus.publish("exec.result", &receipt).await;
                         tracing::info!("executed trade: {}", receipt.tx_hash);
@@ -48,7 +52,7 @@ async fn main() -> eyre::Result<()> {
     });
 
     // Demo: publisher task - simulates trade plan generation
-    let tx_bus = bus.clone();
+    let _tx_bus = bus.clone();
     tokio::spawn(async move {
         // In a real system, these would come from the strategy service
         sleep(Duration::from_secs(1)).await; // Wait a bit for subscriber to start
@@ -63,14 +67,14 @@ async fn main() -> eyre::Result<()> {
 /// Execute a trade and return the receipt
 async fn execute_trade(plan: &TradePlan) -> ExecReceipt {
     tracing::info!("executing trade on {} chain", plan.chain.name);
-    
+
     // In a real implementation, this would:
     // 1. Connect to the appropriate blockchain
     // 2. Build the transaction
     // 3. Sign the transaction (using the keys service)
     // 4. Submit the transaction via the selected execution mode
     // 5. Wait for confirmation and return the receipt
-    
+
     // Simulate execution
     ExecReceipt {
         tx_hash: format!("0x{}", hex::encode(plan.idem_key.as_bytes())),

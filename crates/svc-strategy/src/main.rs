@@ -1,5 +1,5 @@
-use sniper_core::{bus::InMemoryBus, prelude::*};
-use sniper_core::types::{Signal, TradePlan, ChainRef, ExecMode, GasPolicy, ExitRules};
+use sniper_core::types::{ChainRef, ExecMode, ExitRules, GasPolicy, Signal, TradePlan};
+use sniper_core::bus::InMemoryBus;
 use tokio::time::{sleep, Duration};
 
 #[tokio::main]
@@ -20,7 +20,7 @@ async fn main() -> eyre::Result<()> {
             if let Ok(bytes) = rx.recv().await {
                 if let Ok(sig) = serde_json::from_slice::<Signal>(&bytes) {
                     tracing::info!(?sig.kind, "received signal");
-                    
+
                     // Process the signal and generate a trade plan
                     if let Some(plan) = process_signal(&sig).await {
                         // Publish the trade plan
@@ -61,7 +61,7 @@ async fn main() -> eyre::Result<()> {
                 seen_at_ms: 0,
             },
         ];
-        
+
         for signal in signals {
             let _ = tx_bus.publish("signals.dex.event", &signal).await;
             tracing::info!(?signal.kind, "published demo signal");
@@ -101,7 +101,7 @@ async fn process_signal(signal: &Signal) -> Option<TradePlan> {
                 },
                 idem_key: format!("plan_{}", signal.seen_at_ms),
             })
-        },
+        }
         "trading_enabled" => {
             tracing::info!("processing trading enabled signal");
             // In a real implementation, this would analyze the token
@@ -125,7 +125,7 @@ async fn process_signal(signal: &Signal) -> Option<TradePlan> {
                 },
                 idem_key: format!("plan_{}", signal.seen_at_ms),
             })
-        },
+        }
         _ => {
             tracing::debug!("ignoring signal kind: {}", signal.kind);
             None

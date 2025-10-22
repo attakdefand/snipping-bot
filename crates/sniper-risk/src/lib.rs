@@ -1,21 +1,21 @@
 //! Risk management module for the sniper bot.
-//! 
+//!
 //! This module provides functionality for evaluating trades and determining if they
 //! meet the configured risk criteria.
 
-pub mod honeypot;
-pub mod owner_powers;
-pub mod lp_quality;
-pub mod limits;
 pub mod decide;
+pub mod honeypot;
+pub mod limits;
+pub mod lp_quality;
+pub mod owner_powers;
 
 use sniper_core::types::{Decision, TradePlan};
 
 /// Main risk evaluation function
-/// 
+///
 /// Evaluates a trade plan against all configured risk criteria
 /// and returns a decision indicating whether the trade should proceed.
-pub fn evaluate_trade(plan: &TradePlan) -> Decision {
+pub fn evaluate_trade(_plan: &TradePlan) -> Decision {
     // Placeholder implementation - in a real implementation, this would
     // check various risk factors like honeypot detection, owner powers, etc.
     Decision {
@@ -27,7 +27,7 @@ pub fn evaluate_trade(plan: &TradePlan) -> Decision {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sniper_core::types::{ChainRef, ExecMode, GasPolicy, ExitRules};
+    use sniper_core::types::{ChainRef, ExecMode, ExitRules, GasPolicy};
 
     #[test]
     fn test_evaluate_trade() {
@@ -56,6 +56,9 @@ mod tests {
 
         let decision = evaluate_trade(&plan);
         assert!(decision.allow);
-        assert_eq!(decision.reasons, vec!["placeholder implementation".to_string()]);
+        assert_eq!(
+            decision.reasons,
+            vec!["placeholder implementation".to_string()]
+        );
     }
 }
