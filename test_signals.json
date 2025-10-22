@@ -1,0 +1,32 @@
+{
+  "signals": [
+    {
+      "source": "dex",
+      "kind": "pair_created",
+      "chain": {
+        "name": "ethereum",
+        "id": 1
+      },
+      "token0": "0xTokenA",
+      "token1": "0xWETH",
+      "extra": {
+        "pair": "0xPairAddress"
+      },
+      "seen_at_ms": 1500000
+    },
+    {
+      "source": "dex",
+      "kind": "pair_created",
+      "chain": {
+        "name": "ethereum",
+        "id": 1
+      },
+      "token0": "0xTokenB",
+      "token1": "0xWETH",
+      "extra": {
+        "pair": "0xPairAddress2"
+      },
+      "seen_at_ms": 1600000
+    }
+  ]
+}

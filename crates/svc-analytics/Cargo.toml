@@ -1,0 +1,20 @@
+[package]
+name = "svc-analytics"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.80"
+
+[dependencies]
+sniper-core = { path = "../sniper-core" }
+sniper-analytics = { path = "../sniper-analytics" }
+sniper-telemetry = { path = "../sniper-telemetry" }
+anyhow = { workspace = true }
+eyre = { workspace = true }
+dotenvy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+axum = { workspace = true }

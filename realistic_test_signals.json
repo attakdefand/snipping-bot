@@ -1,0 +1,48 @@
+{
+  "signals": [
+    {
+      "source": "dex",
+      "kind": "pair_created",
+      "chain": {
+        "name": "ethereum",
+        "id": 1
+      },
+      "token0": "0xUniswapToken",
+      "token1": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "extra": {
+        "pair": "0xUniswapPairAddress"
+      },
+      "seen_at_ms": 1500000
+    },
+    {
+      "source": "dex",
+      "kind": "liquidity_added",
+      "chain": {
+        "name": "bsc",
+        "id": 56
+      },
+      "token0": "0xBSCNewToken",
+      "token1": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "extra": {
+        "pair": "0xBSCPairAddress",
+        "liquidity_usd": 50000
+      },
+      "seen_at_ms": 1600000
+    },
+    {
+      "source": "dex",
+      "kind": "price_threshold",
+      "chain": {
+        "name": "polygon",
+        "id": 137
+      },
+      "token0": "0xPolygonToken",
+      "token1": "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0",
+      "extra": {
+        "pair": "0xPolygonPairAddress",
+        "price_change_percent": 150.0
+      },
+      "seen_at_ms": 1700000
+    }
+  ]
+}

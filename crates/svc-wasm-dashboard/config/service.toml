@@ -1,0 +1,21 @@
+# WASM Dashboard Service Configuration
+
+[server]
+host = "0.0.0.0"
+port = 3006
+workers = 4
+
+[assets]
+static_path = "./assets/static"
+wasm_path = "./assets/static"
+
+[logging]
+level = "info"
+format = "json"
+file = "./logs/service.log"
+
+[cors]
+enabled = true
+allowed_origins = ["*"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE"]
+allowed_headers = ["*"]

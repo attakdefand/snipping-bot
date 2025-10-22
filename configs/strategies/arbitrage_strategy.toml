@@ -1,0 +1,46 @@
+# Cross-Venue Arbitrage Strategy
+# This strategy exploits price differences between different venues
+
+[strategy]
+name = "Cross-Venue Arbitrage"
+enabled = true
+description = "Exploits price differences between DEXs and CEXs"
+
+# Trading Parameters
+[strategy.trading]
+chains = ["ethereum", "bsc"]
+max_concurrent_trades = 10
+position_size_percent = 1.5
+min_liquidity_usd = 5000
+max_gas_price_gwei = 30
+
+# Signal Processing
+[strategy.signals]
+enable_price_arbitrage = true
+min_arbitrage_percent = 2.0
+check_execution_probability = true
+
+# Arbitrage Parameters
+[strategy.arbitrage]
+min_profit_threshold_percent = 1.5
+max_slippage_percent = 1.0
+execution_timeout_seconds = 10
+route_optimization = true
+
+# Venue Selection
+[strategy.venues]
+dex_enabled = true
+cex_enabled = true
+nft_markets_enabled = false
+preferred_cex = ["binance", "coinbase", "kraken"]
+
+# Exit Strategies
+[strategy.exits]
+take_profit_percent = 3.0
+stop_loss_percent = 1.0
+trailing_stop_enabled = false
+max_holding_time_seconds = 30
+
+# Risk Overrides
+[strategy.risk]
+max_position_loss_percent = 2.0

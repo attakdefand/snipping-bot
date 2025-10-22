@@ -1,0 +1,8 @@
+chain_id = 42161
+rpc_http = "${ARBITRUM_RPC_HTTP}"
+rpc_ws   = "${ARBITRUM_RPC_WS}"
+private_rpc_http = "${ARBITRUM_PRIVATE_RPC_HTTP}"
+gas_price_oracle = "0x000000000000000000000000000000000000006C"
+sequencer_address = "0x0000000000000000000000000000000000000000"
+block_time_secs = 1
+confirmations = 1

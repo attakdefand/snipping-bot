@@ -1,0 +1,54 @@
+# Comprehensive Launch Sniping Strategy
+# This strategy focuses on new token launches with advanced risk controls
+
+[strategy]
+name = "Comprehensive Launch Snipe"
+enabled = true
+description = "Advanced strategy for sniping new token launches with multiple safety checks"
+
+# Trading Parameters
+[strategy.trading]
+chains = ["ethereum", "bsc", "polygon"]
+max_concurrent_trades = 5
+position_size_percent = 2.0
+min_liquidity_usd = 10000
+max_gas_price_gwei = 50
+
+# Signal Processing
+[strategy.signals]
+enable_pair_created = true
+enable_liquidity_added = true
+enable_price_threshold = false
+
+# Sniping Parameters
+[strategy.sniping]
+delay_ms = 100
+gas_price_multiplier = 1.2
+transaction_timeout_seconds = 30
+max_slippage_percent = 3.0
+
+# Token Quality Filters
+[strategy.token_filters]
+min_token_age_days = 1
+require_audit = false
+check_mint_function = true
+check_ownership = true
+max_ownership_percent = 10.0
+
+# Liquidity Requirements
+[strategy.liquidity]
+min_liquidity_ratio = 0.1
+lp_locked_min_days = 7
+require_lp_lock = true
+
+# Exit Strategies
+[strategy.exits]
+take_profit_percent = 50.0
+stop_loss_percent = 20.0
+trailing_stop_enabled = true
+trailing_stop_percent = 10.0
+max_holding_time_hours = 24
+
+# Risk Overrides (overrides global risk settings)
+[strategy.risk]
+max_position_loss_percent = 15.0

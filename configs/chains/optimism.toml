@@ -1,0 +1,8 @@
+chain_id = 10
+rpc_http = "${OPTIMISM_RPC_HTTP}"
+rpc_ws   = "${OPTIMISM_RPC_WS}"
+private_rpc_http = "${OPTIMISM_PRIVATE_RPC_HTTP}"
+gas_price_oracle = "0x420000000000000000000000000000000000000F"
+sequencer_address = "0x0000000000000000000000000000000000000000"
+block_time_secs = 2
+confirmations = 1

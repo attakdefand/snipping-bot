@@ -1,0 +1,23 @@
+[package]
+name = "sniper-bench"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.80"
+
+[[bin]]
+name = "sniper-bench"
+path = "src/main.rs"
+
+[dependencies]
+sniper-core = { path = "../sniper-core" }
+sniper-ml = { path = "../sniper-ml" }
+sniper-risk = { path = "../sniper-risk" }
+sniper-telemetry = { path = "../sniper-telemetry" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,47 @@
+# Example Trading Strategy Configuration
+# Copy this file to create your own strategies
+
+# Strategy Metadata
+[strategy]
+name = "Example Sniping Strategy"
+enabled = false  # Set to true to enable
+description = "Example strategy for token sniping on new pair creations"
+
+# Trading Parameters
+[strategy.trading]
+# Supported chains: ethereum, bsc, polygon, arbitrum, optimism
+chains = ["ethereum", "bsc"]
+max_concurrent_trades = 3
+position_size_percent = 1.0  # Percentage of total capital per trade
+min_liquidity_usd = 5000  # Minimum liquidity requirement
+
+# Signal Processing
+[strategy.signals]
+enable_pair_created = true
+enable_liquidity_added = true
+enable_price_threshold = false
+
+# Price Threshold Settings (only used if enable_price_threshold = true)
+[strategy.price_threshold]
+enabled = false
+threshold_percent = 200.0  # Trigger on 200% price increases
+time_window_minutes = 5
+
+# Sniping Parameters
+[strategy.sniping]
+delay_ms = 50  # Delay before executing snipe (ms)
+gas_price_multiplier = 1.5  # Multiply gas price by this factor
+transaction_timeout_seconds = 60  # Transaction timeout
+max_slippage_percent = 5.0  # Maximum acceptable slippage
+
+# Exit Strategies
+[strategy.exits]
+take_profit_percent = 50.0  # Take profit at 50% gain
+stop_loss_percent = 20.0  # Stop loss at 20% loss
+trailing_stop_enabled = true
+trailing_stop_percent = 10.0  # Trailing stop at 10% from peak
+
+# Risk Management Overrides (these override global risk settings)
+[strategy.risk]
+max_position_loss_percent = 15.0
+position_size_percent = 1.0  # Override global setting if needed

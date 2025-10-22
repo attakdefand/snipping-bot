@@ -1,0 +1,35 @@
+# Simple Risk Management Configuration
+# This file contains basic risk parameters for beginners
+
+# Basic Risk Controls
+[basic]
+max_daily_loss_percent = 5.0
+max_position_loss_percent = 15.0
+max_concurrent_positions = 5
+default_position_size_percent = 2.0
+
+# Simple Trading Parameters
+[trading]
+max_slippage_bps = 300  # 3%
+max_gas_price_gwei = 50
+transaction_timeout_secs = 120
+cooldown_secs = 30
+min_liquidity_usd = 10000
+
+# Basic Safety Checks
+[safety]
+sell_test_enabled = true
+ownership_check = true
+mint_function_check = true
+max_ownership_percent = 15.0
+
+# Simple Exit Strategies
+[exit]
+default_stop_loss_percent = 15.0
+default_take_profit_percent = 40.0
+trailing_stop_enabled = true
+trailing_stop_percent = 10.0
+
+# Market Hours (24/7 trading)
+[hours]
+trading_enabled = true
