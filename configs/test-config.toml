@@ -1,0 +1,15 @@
+[testing]
+# Test configuration for 66+ testing types
+
+[testing.database]
+url = "postgresql://localhost:5432/test_db"
+
+[testing.redis]
+url = "redis://localhost:6379"
+
+[testing.api]
+base_url = "http://localhost:8080"
+
+[testing.security]
+scan_level = "full"
+vulnerability_threshold = "medium"
