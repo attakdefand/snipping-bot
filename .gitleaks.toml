@@ -1,0 +1,84 @@
+# gitleaks configuration file
+# This file configures gitleaks to scan for secrets in the repository
+
+[allowlist]
+  description = "global allow lists"
+  paths = [
+    '''gitleaks.toml''',
+    '''(.*?)(jpg|gif|doc|pdf|bin|env.example|test|tests)'''
+  ]
+
+# Extend the default regexes with additional patterns
+[[rules]]
+  description = "Generic API Key"
+  regex = '''(?i)(api[_-]?key|api[_-]?token)["']?[:=]["']?[a-z0-9]{32,64}["']?'''
+  tags = ["api", "key", "token"]
+
+[[rules]]
+  description = "Generic Secret"
+  regex = '''(?i)(secret|password|passwd|pwd)["']?[:=]["']?[a-z0-9]{16,64}["']?'''
+  tags = ["secret", "password"]
+
+[[rules]]
+  description = "AWS Access Key"
+  regex = '''AKIA[0-9A-Z]{16}'''
+  tags = ["aws", "access_key"]
+
+[[rules]]
+  description = "AWS Secret Key"
+  regex = '''(?i)aws[_-]?secret[_-]?key["']?[:=]["']?[A-Za-z0-9/+=]{40}["']?'''
+  tags = ["aws", "secret_key"]
+
+[[rules]]
+  description = "GitHub Token"
+  regex = '''(?i)github[_-]?token["']?[:=]["']?[a-z0-9]{40}["']?'''
+  tags = ["github", "token"]
+
+[[rules]]
+  description = "Slack Token"
+  regex = '''xox[baprs]-[0-9a-zA-Z]{10,48}'''
+  tags = ["slack", "token"]
+
+[[rules]]
+  description = "Telegram Bot Token"
+  regex = '''(?i)telegram[_-]?bot[_-]?token["']?[:=]["']?[0-9]{8,10}:[a-zA-Z0-9_-]{35}["']?'''
+  tags = ["telegram", "bot_token"]
+
+# Entropy-based detection for high entropy strings
+[[rules]]
+  description = "High Entropy String"
+  regex = '''[a-z0-9]{20,}'''
+  entropy = 4.5
+  tags = ["entropy", "generic"]
+
+# Custom rules for this project
+[[rules]]
+  description = "Private Key"
+  regex = '''-----BEGIN[ A-Z]*PRIVATE KEY-----'''
+  tags = ["private_key"]
+
+[[rules]]
+  description = "Wallet Private Key"
+  regex = '''(?i)(wallet[_-]?private[_-]?key|private[_-]?key)["']?[:=]["']?[a-f0-9]{64}["']?'''
+  tags = ["wallet", "private_key"]
+
+[[rules]]
+  description = "Mnemonic Phrase"
+  regex = '''(?i)(mnemonic|seed_phrase)["']?[:=]["']?[a-z ]{24,}["']?'''
+  tags = ["mnemonic", "seed"]
+
+# Disable some rules that might cause false positives
+[allowlist]
+  description = "Allowlist for false positives"
+  regexes = [
+    '''AKIAIOSFODNN7EXAMPLE''',  # AWS example key
+    '''EXAMPLE_SECRET_KEY''',    # Example secret
+    '''test_token''',           # Test tokens
+  ]
+  paths = [
+    '''test''',
+    '''tests''',
+    '''examples''',
+    '''README.md''',
+    '''\.md$''',
+  ]

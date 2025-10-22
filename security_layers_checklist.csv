@@ -1,0 +1,88 @@
+Layer #,Layer Name,Control Group,Control,Description,Component (Rust/K8s/Web3),Policy/Config Artifact,Test Category,Metric/KPI,Evidence to Store
+1,Governance & Policy,Policy Framework,Security Policy Catalog,Single source of truth for policies mapped to controls and standards,"Repo: /docs/security, ADRs",docs/security/POLICY-CATALOG.md,"Policy Linting, Documentation Tests",% policy coverage; policy->control mapping completeness,"Signed policy documents, change history"
+1,Governance & Policy,Exception Management,Risk-accepted Exceptions,Formal process for temporary deviations with expiry and owner,GRC register; Git CODEOWNERS,docs/security/EXCEPTIONS.md,Exception Expiry Tests,# open exceptions; avg time to close,Approved exception records with sign-off
+1,Governance & Policy,Audit & Assurance,Internal/External Audits,"Track findings, owners, due dates, remediation status",Issue tracker labels: security-audit,docs/security/AUDIT-FINDINGS.md,"Evidence Collection, Control Verification",% findings closed on time,"Audit reports, remediation PRs"
+1,Governance & Policy,Standards Mapping,Control->Standard Traceability,Map controls to ISO/NIST/OWASP for compliance reuse,Matrix in repo,docs/security/STANDARDS-MAP.csv,Matrix Consistency Tests,% controls mapped; gaps,Traceability matrix CSV
+2,Risk & Threat Modeling,Methodologies,STRIDE / LINDDUN / Attack Trees,Apply per service and per data flow,docs/diagrams; threat-model.json,docs/security/THREAT-MDL.md,"Model Linting, DFD Consistency",models per service; refreshed in last 90d,"DFDs, threat register, mitigations list"
+2,Risk & Threat Modeling,Abuse Cases,Misuse/Abuse Scenarios,Document adversarial flows and required controls,Abuse-case tests in QA,tests/abuse/,Abuse-Case Tests,# abuse cases covered,"Test artifacts, screenshots, logs"
+2,Risk & Threat Modeling,Risk Register,Risk Scoring & Owners,Qual/quant scoring with treatment plan,risk.yaml,docs/security/RISK-REGISTER.yaml,"Drift Checks, SLA Alerts",% risks with owners; MTTR per risk,Signed risk register snapshots
+3,Secure SDLC & Supply Chain,Code Scanning,SAST/Secret Scan,"Rust Clippy/deny, secret scanners on PR","cargo-deny, trufflehog",.github/workflows/security.yml,"SAST, Secret Leak Tests",% PRs scanned; # leaks blocked,"CI logs, SARIF reports"
+3,Secure SDLC & Supply Chain,Dependency Health,SCA/SBOM,"Lockfile vetting, SBOM generation and verification","cargo auditable, syft",sbom/syft.spdx.json,"SCA, SBOM Diff Tests",Known vuln exposure; SBOM freshness,"SPDX files, attestations"
+3,Secure SDLC & Supply Chain,Build Integrity,Sigstore/Cosign & Reproducible Builds,Sign images/artifacts; verify in deploy,"cosign, GitHub OIDC",attestations/cosign.json,Signature Verification Tests,% artifacts signed & verified,Cosign attestations
+3,Secure SDLC & Supply Chain,PR Gates,Security PR Checks,"Required checks block merge (linters, tests, policy)",Branch protection rules,"CODEOWNERS, .github/",Policy-as-Code Tests,Block rate for insecure PRs,"Merge logs, check run outputs"
+4,Identity & Access (IAM),AuthN,"OAuth2/OIDC, MFA","Central IdP, MFA enforced for admin",Keycloak/Okta; Rust oidc crates,config/idp.json,AuthN Tests,% admins with MFA; login success/deny rates,"IdP audit logs, MFA proof"
+4,Identity & Access (IAM),AuthZ,"RBAC/ABAC, Least Privilege",Scoped tokens; service/service roles,OPA/Cedar policies,policy/authz.rego,Authorization Tests,Denied-by-default coverage,"Policy bundles, decision logs"
+4,Identity & Access (IAM),JIT Access,Just-in-Time & Break-glass,Time-bound elevation with approval & logging,Access broker tool,runbooks/JIT.md,Access Flow Tests,# JIT grants; expiry enforcement,"Grant tickets, session logs"
+4,Identity & Access (IAM),Key Rotation,Credential & Token Rotation,Short TTL tokens; periodic rotation jobs,cronjobs in K8s,k8s/cron/rotate.yaml,Rotation Tests,Age of oldest secret; rotation success,"Rotation logs, secret versions"
+5,Secrets Management,Storage,Vault/SOPS,"Central secret store, envelopes for CI/CD",HashiCorp Vault; sops + age,infra/vault/,Secret Access Tests,# direct env secrets (should be 0),"Vault policies, access logs"
+5,Secrets Management,Separation,Env Separation & Scoping,Dev/Stage/Prod isolation and namespace scoping,K8s namespaces/tenants,k8s/namespaces.yaml,Env Boundary Tests,Cross-env secret access attempts,Namespace manifests
+5,Secrets Management,Scanning,Secret Scanning in Repos & Images,Block commits/images with secrets,gitleaks; trufflehog; crane,.gitleaks.toml,Leak Tests,Leak MTTR; # blocked leaks,Scanner reports
+5,Secrets Management,Rotation,Automated Rotation,Rotate DB/API keys with zero-downtime,Sidecars/jobs,jobs/rotate-*.yaml,Rotation Tests,Rotation success; outage minutes (should 0),Rotation run logs
+6,Key & Cryptography,KMS/HSM,Centralized Key Management,"Envelope encryption, HSM for root keys",AWS KMS/CloudHSM or on-prem,kms/policies.json,Crypto Tests,Key usage logs audited; separation of duties,"KMS key policies, CMKs list"
+6,Key & Cryptography,TLS Policy,Cipher Suites & TLS,"Min TLS1.2+, strong ciphers; cert rotation",Linkerd/Ingress TLS,k8s/ingress-tls.yaml,TLS Tests,% services mTLS; cert age,TLS scan outputs
+6,Key & Cryptography,Deterministic/Non-det Crypto,Crypto Rules,Rules for when to use deterministic vs randomized modes,Crypto guidelines doc,docs/security/CRYPTO-RULES.md,Unit/Property Tests,Violations in code scan,"Guideline doc, code refs"
+6,Key & Cryptography,Key Ops,"Split Knowledge, Dual Control",2-person rule for key export/use,Custody procedures,runbooks/KEY-OPS.md,Procedure Drills,# violations; drill results,"Drill artefacts, approvals"
+7,Network Segmentation & Transport,Zero-Trust,Default-Deny East/West,Service identity + policy to allow,Linkerd/NetworkPolicies,k8s/networkpolicies.yaml,Policy Tests,% flows allowed only by policy,"Policy manifests, mesh config"
+7,Network Segmentation & Transport,mTLS,Service-to-Service AuthN,SPIFEE/SPIRE IDs; cert rotation,Service mesh,mesh/config.yaml,Handshake Tests,mTLS success rate; cert expiries,"Mesh metrics, cert bundles"
+7,Network Segmentation & Transport,Egress Control,Outbound Allow-List,Block exfil via strict egress,Egress gateways,k8s/egress.yaml,Egress Tests,# unexpected egress blocks,Gateway logs
+7,Network Segmentation & Transport,Ingress Control,North/South Filtering,"IP allow-lists, geo-fencing where needed",WAF/Ingress,k8s/ingress-waf.yaml,Ingress Tests,Attack blocked rate,"WAF rule sets, logs"
+8,Perimeter & API Gateway,WAF,OWASP Top 10 Filters,Block common web attacks,nginx/modsec/Cloud WAF,waf/rules.conf,"DAST, Probe Tests",WAF block/allow precision,"WAF logs, configs"
+8,Perimeter & API Gateway,Rate Limit,Global & Per-Token Limits,Protect against DoS & abuse,Envoy/Linkerd + Redis,gateway/ratelimit.yaml,Load/Abuse Tests,429 rate under attack,Rate-limit policies
+8,Perimeter & API Gateway,Schema Validation,Strict Request/Response Schemas,OpenAPI/GraphQL SDL enforcement,"Spectral, graphql-shield",api/schema/,Contract Tests,Schema drift incidents,"Schema snapshots, diffs"
+8,Perimeter & API Gateway,Bot Defense,Bot/Automation Controls,Challenge/behavioral checks on public endpoints,Bot mgmt service,gateway/bot.yaml,Bot Tests,Bot traffic ratio,"Bot rules, challenge stats"
+9,Host/Endpoint Hardening,Baselines,CIS Baselines,Harden OS images & configs,Ansible/Packer images,infra/images/,Config Compliance Tests,% hosts compliant,CIS scan outputs
+9,Host/Endpoint Hardening,Exploit Mitigations,"ASLR/PIE, NX, CFI",Compiler/OS flags enabled,Rust + kernel flags,build/flags.toml,Binary Checks,% binaries PIE/NX,"objdump results, build logs"
+9,Host/Endpoint Hardening,EDR,Endpoint Detection & Response,Agents or kernel sensors,EDR vendor / Falco,edr/config.yaml,Detection Tests,MTTD endpoint threats,"Alerts, detections"
+9,Host/Endpoint Hardening,SSH/Access,SSH Hardening & PAM,No password logins; key-only; session logs,sshd_config; Teleport,infra/ssh/sshd_config,Access Tests,# direct root logins (0),Auth logs
+10,Containers & Orchestration,Images,"Minimal, Signed, Non-root","Distroless, UID drop, RO FS",Dockerfiles; cosign,docker/,Image Checks,% signed; % non-root,"Image scan, attestations"
+10,Containers & Orchestration,Policies,PSP/OPA Gatekeeper,"Deny privileged, hostPath, CAP_SYS_ADMIN",Gatekeeper constraints,k8s/policy/,Policy Tests,# policy violations,"Constraint templates, audit logs"
+10,Containers & Orchestration,Runtime,seccomp/AppArmor,Syscall allowlists,Profiles per service,k8s/seccomp/,Runtime Tests,Syscall block events,Auditd/Falco logs
+10,Containers & Orchestration,Scheduling,Node/Pod Security & Quotas,"Taints/tolerations, resource limits",k8s/limits.yaml,k8s/limits.yaml,Chaos/Capacity Tests,% pods with limits,K8s API evidence
+11,Cloud/IaaS Security,Account Guardrails,Org SCP/Projects,Deny dangerous services by default,AWS SCP/GCP Org Policy,infra/cloud/guardrails/,Policy Tests,# policy bypass attempts,Cloud policy reports
+11,Cloud/IaaS Security,Compute Images,Hardened AMIs/Images,Golden images pipeline,"Packer, AMI bake",infra/images/packer.json,Image Tests,Drift from baseline,"Image recipe, hash"
+11,Cloud/IaaS Security,Network,SG/NACL Baselines,"Default-deny, tiered subnets",Terraform modules,infra/network/,Infra Tests,Open ports exposure,"TF plans, security scans"
+11,Cloud/IaaS Security,Metadata,IMDSv2/Metadata Hardening,Prevent SSRF credentials theft,IMDSv2 enforced,infra/compute/metadata.json,Pen Tests/SSRF,IMDSv2 usage %,Cloud config screenshots
+12,Data Security,Classification,Data Classes & Tags,Public/Int/Conf/Restricted with lineage,DLP tagging,data/classification.yaml,DLP Tests,% assets tagged; unknown data,Tagging exports
+12,Data Security,Encryption at Rest,Transparent & Field-level,TDE plus FLE for sensitive fields,KMS-integrated,db/encryption.yaml,Crypto Tests,% encrypted fields; key age,"Key map, schema diffs"
+12,Data Security,Masking/Tokenization,PII Handling,Live data masking in lower envs,masking rules,data/masking.yaml,Masking Tests,% masked in non-prod,"Masking rules, test logs"
+12,Data Security,Backups,Encrypted Backups & Restore Drills,Immutable backups with periodic restore tests,backup jobs,jobs/backup-restore.yaml,DR Drills,RPO/RTO success,"Restore reports, hashes"
+13,Application Security,Input Validation,Strict Validation & CEI,Central validators; checks-effects-interactions,"Rust type system, validators",crates/validation/,Fuzz/Unit Tests,Reject rate for invalid inputs,"Test logs, coverage"
+13,Application Security,Session/Web,"CSRF, CORS, SSRF Guards",Defense-in-depth headers & checks,middlewares in Axum,crates/middleware/,DAST/Web Tests,CSRF token coverage,"Middleware code, configs"
+13,Application Security,Memory Safety,Unsafe minimization,Ban unsafe unless approved ADR,lint rules,deny.toml,Static Tests,Lines of unsafe; review notes,"Lint outputs, ADRs"
+13,Application Security,Invariants,Business Invariant Checks,Pre/post-conditions and asserts,contracts lib,crates/invariants/,Property Tests,Invariant violation count,Proptest results
+14,Protocol/API Security,Contracts,OpenAPI/GraphQL/gRPC,"Versioned, reviewed contracts",api/*,api/openapi.yaml,Contract Tests,Breaking changes caught,"Schema diffs, approvals"
+14,Protocol/API Security,Pagination & ETags,DoS-safe patterns,Limit page sizes; conditional requests,Axum extractors,crates/http/,Load Tests,% endpoints with limits,Endpoint catalog
+14,Protocol/API Security,Query Costing,Cost Limits/Complexity,GraphQL cost/Depth limits; SQL guards,graphql rules; SQL guards,api/graphql/policy.json,Abuse Tests,Rejected costly queries,"Policy files, logs"
+14,Protocol/API Security,Schema Diffs,Automated Drift Detection,PR-time diff & changelogs,CI job,ci/schema-diff.yaml,CI Tests,# drift incidents,Diff reports
+15,Messaging & Event Security,AuthN/Z,NATS/JetStream ACLs,Per-subject tokens/permissions,nats server config,nats/auth.conf,AuthZ Tests,Denied unauthorized subs/pubs,Broker logs
+15,Messaging & Event Security,Idempotency,Idempotency Keys & Dedupe,Handle retries safely,JetStream KV/Sequence,crates/idempotency/,Chaos/Retry Tests,Duplication rate,Idempotency tables/logs
+15,Messaging & Event Security,Replay Protection,Nonces/Timestamps,Reject stale messages,middleware,crates/middleware/,Security Tests,Replay reject count,Timestamp checks
+15,Messaging & Event Security,Encryption,At-rest & in-transit,mTLS + payload encryption if required,nkey/JWT,nats/nkey/,Crypto Tests,Encrypted subjects ratio,"Config, key materials"
+16,Database Security,RBAC,DB Roles & Least Privilege,"Per-service roles, read vs write separation",SQL migrations,db/migrations/roles.sql,Privilege Tests,# superuser grants (0),"Role grants, audit"
+16,Database Security,RLS/CLS,Row/Column-level Security,Policies per tenant/user,"Postgres RLS, MySQL views",db/rls.sql,Policy Tests,% tables with RLS,"RLS policies, tests"
+16,Database Security,TLS & Audit,Encrypted Links & Audit,TLS required; audit logs shipped,db configs,db/postgresql.conf,Config Tests,% TLS connections; audit volume,"TLS params, audit logs"
+16,Database Security,Backups/Restore,Encrypted Backups,Hot/cold backups with drills,pgbackrest/xbstream,backup/,DR Tests,RPO/RTO achieved,Restore test logs
+17,Wallet/Custody & Key Ops (Web3),Tiers,Hot/Warm/Cold Segregation,Withdrawals via tiered paths,Custody service,custody/policy.yaml,Flow Tests,% volume via hot; risk caps,Approval logs
+17,Wallet/Custody & Key Ops (Web3),MPC/Multi-sig,Threshold Signing,Split signing across parties/devices,MPC engine,custody/mpc/,Crypto Tests,Signer availability; quorum success,Sig transcripts
+17,Wallet/Custody & Key Ops (Web3),Withdrawal Policy,Velocity/Cooldowns,"Per-user limits, cooling periods",policy engine,policies/withdrawal.yaml,Abuse Tests,Fraud catches; false positives,Policy decisions
+17,Wallet/Custody & Key Ops (Web3),Address Mgmt,Allow/Block Lists,"Sanctions, scam list checks",screening service,custody/screen.yaml,Compliance Tests,# blocked withdrawals,"Screen results, proofs"
+18,Oracle & Market Data Integrity (Web3),Aggregation,TWAP/Medianizers,Robust aggregation of prices,oracle service,oracle/aggregator.yaml,Model Tests,Deviation vs spot,"TWAP windows, charts"
+18,Oracle & Market Data Integrity (Web3),Heartbeat/Staleness,Max Age Policies,Reject stale feeds,staleness guards,oracle/heartbeat.yaml,Staleness Tests,% updates within SLA,"Timestamps, alarms"
+18,Oracle & Market Data Integrity (Web3),Deviation Guards,Max % Change,Pause or circuit on spikes,risk engine,oracle/deviation.yaml,Chaos/Spike Tests,# deviations triggered,Guard events
+18,Oracle & Market Data Integrity (Web3),Quorum,Cross-source Voting,Min N-of-M sources to accept,quorum config,oracle/quorum.yaml,Byzantine Tests,# times quorum failed,Quorum decisions
+19,Privacy & Compliance,Minimization,Collect-Only-What-Needed,PIA reviews for new data,PIA templates,privacy/PIA.md,PIA Tests,PIA coverage ratio,PIA records
+19,Privacy & Compliance,DSR Flows,Access/Delete/Export,Authenticated self-serve portal,privacy service,privacy/dsr.yaml,Functional Tests,DSR SLA met,"DSR tickets, proofs"
+19,Privacy & Compliance,Retention,Time-bound Deletion,TTL-based auto-delete,db TTL jobs,data/retention.yaml,Retention Tests,% data beyond TTL (0),Deletion logs
+19,Privacy & Compliance,Regionalization,Data Residency,Store/process in-region,Geo shards,infra/geo/,Geo Tests,Cross-region accesses blocked,"Region maps, configs"
+20,Observability & Telemetry Security,Structured Logging,PII Scrubbing,No secrets/PII; redaction,OTel processors,otel/redaction.yaml,Log Tests,Redaction hit/miss,"Processor configs, samples"
+20,Observability & Telemetry Security,Metrics/Traces Access,RBAC on Observability,Limit who can see raw traces,Grafana/Tempo perms,observability/rbac.yaml,Access Tests,# unauthorized attempts,Audit logs
+20,Observability & Telemetry Security,Tamper Evidence,Immutable Logs,WORM storage or hash-chains,Loki object store,observability/tamper.yaml,Integrity Tests,Hash-chain breaks (0),"Hashes, receipts"
+20,Observability & Telemetry Security,Trace Sampling,Dynamic Sampling,Protect cost & privacy,collector rules,otel/sampling.yaml,Perf Tests,Sampling % adherence,"Rules, dashboards"
+21,Detection & Response,Use Cases,SIEM Rules & Detections,Mapped to ATT&CK and env specifics,Sigma rules,siem/rules/,Detection QA,True/false positive rates,"Rule packs, test results"
+21,Detection & Response,Anomaly Models,UEBA/Anomaly,"Behavioral baselines, alerts",ML jobs,siem/ueba/,Model Tests,Alert precision/recall,Model evals
+21,Detection & Response,Runbooks,IR Runbooks & On-call,Per alert type playbooks,docs/runbooks/,docs/runbooks/*,Drill Tests,MTTD/MTTR,"Drill notes, timelines"
+21,Detection & Response,Forensics,Acquisition & Chain of Custody,"Disk/mem capture, legal hold",Forensics kits,ir/forensics/,Forensic Drills,Case completeness,Evidence manifests
+22,"Resilience, Availability & Chaos",Rate Limiters,Backpressure & Quotas,Protect shared resources,leaky-bucket libs,crates/ratelimit/,Soak/Stress Tests,Shed load %,"Config, graphs"
+22,"Resilience, Availability & Chaos",Circuit Breakers,Fail-Fast,Trip on dependency failures,tower::limit/middleware,crates/circuit/,Chaos/Latency Tests,Trip frequency; recovery time,Breaker state logs
+22,"Resilience, Availability & Chaos",Bulkheads,Isolate Pools,Isolate threads/connections,tokio pools,crates/bulkhead/,Stress Tests,Blast radius size,Pool configs
+22,"Resilience, Availability & Chaos",DR/BCP,Disaster Recovery,"Multi-region, restore, exercises",runbooks/dr/,docs/dr/PLAN.md,DR Drills,RPO/RTO met,Exercise reports

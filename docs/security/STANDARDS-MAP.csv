@@ -1,0 +1,88 @@
+Control ID,Control Name,Layer,OWASP Top 10 2021,OWASP API Security Top 10 2023,NIST CSF,ISO 27001
+SEC-001,Security Policy Catalog,1,A05: Security Misconfiguration,,,
+SEC-002,Risk-accepted Exceptions,1,A05: Security Misconfiguration,,,
+SEC-003,Internal/External Audits,1,A05: Security Misconfiguration,,,
+SEC-004,Control->Standard Traceability,1,A05: Security Misconfiguration,,,
+SEC-005,STRIDE / LINDDUN / Attack Trees,2,A05: Security Misconfiguration,,,
+SEC-006,Misuse/Abuse Scenarios,2,A05: Security Misconfiguration,,,
+SEC-007,Risk Scoring & Owners,2,A05: Security Misconfiguration,,,
+SEC-008,SAST/Secret Scan,3,A03: Injection,A02: Broken Authentication,,,
+SEC-009,SCA/SBOM,3,A06: Vulnerable and Outdated Components,A08: Security Misconfiguration,,,
+SEC-010,Sigstore/Cosign & Reproducible Builds,3,A05: Security Misconfiguration,A08: Security Misconfiguration,,,
+SEC-011,Security PR Checks,3,A05: Security Misconfiguration,A08: Security Misconfiguration,,,
+SEC-012,OAuth2/OIDC,4,A07: Identification and Authentication Failures,A02: Broken Authentication,,,
+SEC-013,RBAC/ABAC,4,A01: Broken Access Control,A01: Broken Object Level Authorization,A05: Identity Management,,A.9 Access control
+SEC-014,Just-in-Time & Break-glass,4,A01: Broken Access Control,A01: Broken Object Level Authorization,A05: Identity Management,,A.9 Access control
+SEC-015,Credential & Token Rotation,4,A07: Identification and Authentication Failures,A02: Broken Authentication,A05: Identity Management,,A.9 Access control
+SEC-016,Vault/SOPS,5,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-017,Env Separation & Scoping,5,A01: Broken Access Control,A01: Broken Object Level Authorization,A05: Identity Management,,A.9 Access control
+SEC-018,Secret Scanning in Repos & Images,5,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-019,Automated Rotation,5,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-020,Centralized Key Management,6,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-021,TLS Policy,6,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-022,Crypto Rules,6,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-023,Split Knowledge, Dual Control,6,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-024,Zero-Trust,7,A01: Broken Access Control,A01: Broken Object Level Authorization,A05: Identity Management,,A.9 Access control
+SEC-025,Service-to-Service AuthN,7,A07: Identification and Authentication Failures,A02: Broken Authentication,A05: Identity Management,,A.9 Access control
+SEC-026,Outbound Allow-List,7,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-027,North/South Filtering,7,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-028,OWASP Top 10 Filters,8,A03: Injection,A03: Excessive Data Exposure,A04: Protective Technology,,A.12 System acquisition
+SEC-029,Global & Per-Token Limits,8,A04: Insecure Design,A04: Unrestricted Resource Consumption,A04: Protective Technology,,A.12 System acquisition
+SEC-030,Strict Request/Response Schemas,8,A03: Injection,A03: Excessive Data Exposure,A04: Protective Technology,,A.12 System acquisition
+SEC-031,Bot/Automation Controls,8,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-032,CIS Baselines,9,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-033,Exploit Mitigations,9,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-034,Endpoint Detection & Response,9,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-035,SSH Hardening & PAM,9,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-036,Minimal, Signed, Non-root,10,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-037,PSP/OPA Gatekeeper,10,A01: Broken Access Control,A01: Broken Object Level Authorization,A05: Identity Management,,A.9 Access control
+SEC-038,seccomp/AppArmor,10,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-039,Node/Pod Security & Quotas,10,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-040,Org SCP/Projects,11,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-041,Hardened AMIs/Images,11,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-042,SG/NACL Baselines,11,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-043,IMDSv2/Metadata Hardening,11,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-044,Data Classes & Tags,12,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-045,Encryption at Rest,12,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-046,PII Handling,12,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-047,Encrypted Backups & Restore Drills,12,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-048,Strict Validation & CEI,13,A03: Injection,A03: Excessive Data Exposure,A04: Protective Technology,,A.12 System acquisition
+SEC-049,CSRF, CORS, SSRF Guards,13,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-050,Unsafe minimization,13,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-051,Business Invariant Checks,13,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-052,OpenAPI/GraphQL/gRPC,14,A03: Injection,A03: Excessive Data Exposure,A04: Protective Technology,,A.12 System acquisition
+SEC-053,DoS-safe patterns,14,A04: Insecure Design,A04: Unrestricted Resource Consumption,A04: Protective Technology,,A.12 System acquisition
+SEC-054,Cost Limits/Complexity,14,A04: Insecure Design,A04: Unrestricted Resource Consumption,A04: Protective Technology,,A.12 System acquisition
+SEC-055,Automated Drift Detection,14,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-056,NATS/JetStream ACLs,15,A01: Broken Access Control,A01: Broken Object Level Authorization,A05: Identity Management,,A.9 Access control
+SEC-057,Idempotency Keys & Dedupe,15,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-058,Nonces/Timestamps,15,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-059,At-rest & in-transit,15,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-060,DB Roles & Least Privilege,16,A01: Broken Access Control,A01: Broken Object Level Authorization,A05: Identity Management,,A.9 Access control
+SEC-061,Row/Column-level Security,16,A01: Broken Access Control,A01: Broken Object Level Authorization,A05: Identity Management,,A.9 Access control
+SEC-062,Encrypted Links & Audit,16,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-063,Encrypted Backups,16,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-064,Hot/Warm/Cold Segregation,17,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-065,Threshold Signing,17,A02: Cryptographic Failures,A10: Unsafe Consumption of APIs,A03: Data Protection,,A.10 Cryptography
+SEC-066,Velocity/Cooldowns,17,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-067,Allow/Block Lists,17,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-068,TWAP/Medianizers,18,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-069,Max Age Policies,18,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-070,Max % Change,18,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-071,Cross-source Voting,18,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-072,Collect-Only-What-Needed,19,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-073,Access/Delete/Export,19,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-074,Time-bound Deletion,19,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-075,Data Residency,19,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-076,PII Scrubbing,20,A05: Security Misconfiguration,A08: Security Misconfiguration,A03: Data Protection,,A.8 Asset management
+SEC-077,RBAC on Observability,20,A01: Broken Access Control,A01: Broken Object Level Authorization,A05: Identity Management,,A.9 Access control
+SEC-078,Immutable Logs,20,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-079,Dynamic Sampling,20,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-080,SIEM Rules & Detections,21,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-081,UEBA/Anomaly,21,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-082,IR Runbooks & On-call,21,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-083,Acquisition & Chain of Custody,21,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-084,Backpressure & Quotas,22,A04: Insecure Design,A04: Unrestricted Resource Consumption,A04: Protective Technology,,A.12 System acquisition
+SEC-085,Fail-Fast,22,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-086,Isolate Pools,22,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
+SEC-087,Disaster Recovery,22,A05: Security Misconfiguration,A08: Security Misconfiguration,A04: Protective Technology,,A.12 System acquisition
