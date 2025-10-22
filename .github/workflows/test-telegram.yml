@@ -14,6 +14,14 @@ jobs:
         run: |
           echo "TELEGRAM_BOT_TOKEN present: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}"
           echo "TELEGRAM_CHAT_ID present: ${{ secrets.TELEGRAM_CHAT_ID != '' }}"
+          if [ "${{ secrets.TELEGRAM_BOT_TOKEN }}" = "" ]; then
+            echo "ERROR: TELEGRAM_BOT_TOKEN secret is not set"
+            exit 1
+          fi
+          if [ "${{ secrets.TELEGRAM_CHAT_ID }}" = "" ]; then
+            echo "ERROR: TELEGRAM_CHAT_ID secret is not set"
+            exit 1
+          fi
       
       - name: Send Telegram Notification
         uses: appleboy/telegram-action@v0.1.1
