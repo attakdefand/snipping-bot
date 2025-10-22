@@ -1,15 +1,15 @@
 //! CEX (Centralized Exchange) integration module for the sniper bot.
-//! 
+//!
 //! This module provides functionality for interacting with centralized exchanges
 //! including REST APIs and WebSocket feeds for price data and order management.
 
+pub mod auth;
 pub mod rest;
 pub mod ws;
-pub mod auth;
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
 /// CEX exchange identifier
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,7 +77,7 @@ pub struct Trade {
 pub trait CexClient {
     /// Get order book for a symbol
     async fn get_order_book(&self, symbol: &Symbol) -> Result<OrderBook>;
-    
+
     /// Place an order
     async fn place_order(
         &self,
@@ -87,13 +87,13 @@ pub trait CexClient {
         price: Option<f64>,
         amount: f64,
     ) -> Result<String>; // Returns order ID
-    
+
     /// Get order status
     async fn get_order_status(&self, order_id: &str) -> Result<OrderStatus>;
-    
+
     /// Cancel an order
     async fn cancel_order(&self, order_id: &str) -> Result<()>;
-    
+
     /// Get account balances
     async fn get_balances(&self) -> Result<std::collections::HashMap<String, f64>>;
 }
@@ -109,7 +109,13 @@ pub struct Client {
 
 impl Client {
     /// Create a new CEX client
-    pub fn new(exchange_id: ExchangeId, api_key: String, api_secret: String, rest_endpoint: String, ws_endpoint: String) -> Self {
+    pub fn new(
+        exchange_id: ExchangeId,
+        api_key: String,
+        api_secret: String,
+        rest_endpoint: String,
+        ws_endpoint: String,
+    ) -> Self {
         Self {
             exchange_id,
             api_key,
@@ -118,20 +124,30 @@ impl Client {
             ws_endpoint,
         }
     }
-    
+
     /// Get exchange identifier
     pub fn exchange_id(&self) -> &ExchangeId {
         &self.exchange_id
     }
-    
+
     /// Get REST endpoint
     pub fn rest_endpoint(&self) -> &str {
         &self.rest_endpoint
     }
-    
+
     /// Get WebSocket endpoint
     pub fn ws_endpoint(&self) -> &str {
         &self.ws_endpoint
+    }
+
+    /// Get API key
+    pub fn api_key(&self) -> &str {
+        &self.api_key
+    }
+
+    /// Get API secret
+    pub fn api_secret(&self) -> &str {
+        &self.api_secret
     }
 }
 
@@ -148,28 +164,28 @@ mod tests {
             "https://api.binance.com".to_string(),
             "wss://stream.binance.com:9443".to_string(),
         );
-        
+
         assert_eq!(client.exchange_id().0, "binance");
         assert_eq!(client.rest_endpoint(), "https://api.binance.com");
         assert_eq!(client.ws_endpoint(), "wss://stream.binance.com:9443");
     }
-    
+
     #[test]
     fn test_symbol_creation() {
         let symbol = Symbol("BTC/USDT".to_string());
         assert_eq!(symbol.0, "BTC/USDT");
     }
-    
+
     #[test]
     fn test_order_side() {
         let buy = OrderSide::Buy;
         let sell = OrderSide::Sell;
-        
+
         match buy {
             OrderSide::Buy => assert!(true),
             OrderSide::Sell => assert!(false),
         }
-        
+
         match sell {
             OrderSide::Buy => assert!(false),
             OrderSide::Sell => assert!(true),

@@ -1,13 +1,12 @@
 //! Policy engine module for the sniper bot.
-//! 
+//!
 //! This module provides functionality for enforcing various policies
 //! including geographic restrictions, venue rules, and KYC requirements.
 
 pub mod geo;
-pub mod venue;
 pub mod kyc;
+pub mod venue;
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -72,12 +71,14 @@ impl PolicyEngine for GeoPolicy {
         // If no geo region is provided, we can't make a decision
         let geo_region = match &context.geo_region {
             Some(region) => region,
-            None => return PolicyVerdict {
-                allowed: false,
-                reasons: vec!["No geographic region provided".to_string()],
-            },
+            None => {
+                return PolicyVerdict {
+                    allowed: false,
+                    reasons: vec!["No geographic region provided".to_string()],
+                }
+            }
         };
-        
+
         // Check if the region is explicitly blocked
         if self.blocked_regions.contains(geo_region) {
             return PolicyVerdict {
@@ -85,7 +86,7 @@ impl PolicyEngine for GeoPolicy {
                 reasons: vec![format!("Region {} is blocked", geo_region.0)],
             };
         }
-        
+
         // If there are allowed regions specified, check if the region is in the list
         if !self.allowed_regions.is_empty() && !self.allowed_regions.contains(geo_region) {
             return PolicyVerdict {
@@ -93,7 +94,7 @@ impl PolicyEngine for GeoPolicy {
                 reasons: vec![format!("Region {} is not in allowed list", geo_region.0)],
             };
         }
-        
+
         // If we get here, the action is allowed
         PolicyVerdict {
             allowed: true,
@@ -118,7 +119,7 @@ impl VenuePolicy {
             venue_rules: HashMap::new(),
         }
     }
-    
+
     /// Add rules for a specific venue
     pub fn add_venue_rules(&mut self, venue_id: VenueId, rules: Vec<String>) {
         self.venue_rules.insert(venue_id, rules);
@@ -134,15 +135,18 @@ impl PolicyEngine for VenuePolicy {
                 reasons: vec![format!("Venue {} is blocked", context.venue_id.0)],
             };
         }
-        
+
         // If there are allowed venues specified, check if the venue is in the list
         if !self.allowed_venues.is_empty() && !self.allowed_venues.contains(&context.venue_id) {
             return PolicyVerdict {
                 allowed: false,
-                reasons: vec![format!("Venue {} is not in allowed list", context.venue_id.0)],
+                reasons: vec![format!(
+                    "Venue {} is not in allowed list",
+                    context.venue_id.0
+                )],
             };
         }
-        
+
         // Check venue-specific rules
         let mut reasons = Vec::new();
         if let Some(rules) = self.venue_rules.get(&context.venue_id) {
@@ -152,7 +156,7 @@ impl PolicyEngine for VenuePolicy {
                 reasons.push(format!("Venue rule: {}", rule));
             }
         }
-        
+
         // If we get here, the action is allowed
         PolicyVerdict {
             allowed: true,
@@ -184,7 +188,7 @@ impl PolicyEngine for KycPolicy {
                 reasons: vec![],
             };
         }
-        
+
         // If KYC is required, check the user's KYC status
         match context.kyc_status {
             KycStatus::Verified => PolicyVerdict {
@@ -208,6 +212,12 @@ pub struct CompositePolicy {
     engines: Vec<Box<dyn PolicyEngine>>,
 }
 
+impl Default for CompositePolicy {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompositePolicy {
     /// Create a new composite policy engine
     pub fn new() -> Self {
@@ -215,7 +225,7 @@ impl CompositePolicy {
             engines: Vec::new(),
         }
     }
-    
+
     /// Add a policy engine to the composite
     pub fn add_engine(&mut self, engine: Box<dyn PolicyEngine>) {
         self.engines.push(engine);
@@ -225,11 +235,11 @@ impl CompositePolicy {
 impl PolicyEngine for CompositePolicy {
     fn evaluate(&self, context: &UserContext) -> PolicyVerdict {
         let mut all_reasons = Vec::new();
-        
+
         // Evaluate all policy engines
         for engine in &self.engines {
             let verdict = engine.evaluate(context);
-            
+
             // If any policy engine denies the action, deny it overall
             if !verdict.allowed {
                 all_reasons.extend(verdict.reasons);
@@ -238,11 +248,11 @@ impl PolicyEngine for CompositePolicy {
                     reasons: all_reasons,
                 };
             }
-            
+
             // Collect reasons from allowed policies
             all_reasons.extend(verdict.reasons);
         }
-        
+
         // If all policy engines allow the action, allow it overall
         PolicyVerdict {
             allowed: true,
@@ -261,7 +271,7 @@ mod tests {
             vec![GeoRegion("US".to_string()), GeoRegion("CA".to_string())],
             vec![],
         );
-        
+
         let context = UserContext {
             user_id: "user1".to_string(),
             ip_address: Some("1.2.3.4".to_string()),
@@ -269,19 +279,19 @@ mod tests {
             kyc_status: KycStatus::Verified,
             venue_id: VenueId("binance".to_string()),
         };
-        
+
         let verdict = policy.evaluate(&context);
         assert!(verdict.allowed);
         assert!(verdict.reasons.is_empty());
     }
-    
+
     #[test]
     fn test_geo_policy_blocked_region() {
         let policy = GeoPolicy::new(
             vec![],
             vec![GeoRegion("CN".to_string()), GeoRegion("RU".to_string())],
         );
-        
+
         let context = UserContext {
             user_id: "user1".to_string(),
             ip_address: Some("1.2.3.4".to_string()),
@@ -289,19 +299,22 @@ mod tests {
             kyc_status: KycStatus::Verified,
             venue_id: VenueId("binance".to_string()),
         };
-        
+
         let verdict = policy.evaluate(&context);
         assert!(!verdict.allowed);
         assert_eq!(verdict.reasons, vec!["Region CN is blocked"]);
     }
-    
+
     #[test]
     fn test_venue_policy_allowed_venue() {
         let policy = VenuePolicy::new(
-            vec![VenueId("binance".to_string()), VenueId("coinbase".to_string())],
+            vec![
+                VenueId("binance".to_string()),
+                VenueId("coinbase".to_string()),
+            ],
             vec![],
         );
-        
+
         let context = UserContext {
             user_id: "user1".to_string(),
             ip_address: Some("1.2.3.4".to_string()),
@@ -309,16 +322,16 @@ mod tests {
             kyc_status: KycStatus::Verified,
             venue_id: VenueId("binance".to_string()),
         };
-        
+
         let verdict = policy.evaluate(&context);
         assert!(verdict.allowed);
         assert!(verdict.reasons.is_empty());
     }
-    
+
     #[test]
     fn test_kyc_policy_verified() {
         let policy = KycPolicy::new(vec![VenueId("binance".to_string())]);
-        
+
         let context = UserContext {
             user_id: "user1".to_string(),
             ip_address: Some("1.2.3.4".to_string()),
@@ -326,19 +339,19 @@ mod tests {
             kyc_status: KycStatus::Verified,
             venue_id: VenueId("binance".to_string()),
         };
-        
+
         let verdict = policy.evaluate(&context);
         assert!(verdict.allowed);
         assert_eq!(verdict.reasons, vec!["KYC verified"]);
     }
-    
+
     #[test]
     fn test_composite_policy() {
         let mut composite = CompositePolicy::new();
         composite.add_engine(Box::new(GeoPolicy::new(vec![], vec![])));
         composite.add_engine(Box::new(VenuePolicy::new(vec![], vec![])));
         composite.add_engine(Box::new(KycPolicy::new(vec![])));
-        
+
         let context = UserContext {
             user_id: "user1".to_string(),
             ip_address: Some("1.2.3.4".to_string()),
@@ -346,7 +359,7 @@ mod tests {
             kyc_status: KycStatus::Verified,
             venue_id: VenueId("binance".to_string()),
         };
-        
+
         let verdict = composite.evaluate(&context);
         assert!(verdict.allowed);
     }

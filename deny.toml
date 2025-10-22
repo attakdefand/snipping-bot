@@ -1,0 +1,60 @@
+# Configuration for cargo-deny
+
+# This section is considered when running `cargo deny check advisories`
+# More documentation at: https://embarkstudios.github.io/cargo-deny/checks/advisories/cfg.html
+[advisories]
+# The path where the advisory database is cloned/fetched into
+db-path = "~/.cargo/advisory-db"
+# The url(s) of the advisory database to use
+db-urls = ["https://github.com/RustSec/advisory-db"]
+# The lint level for security vulnerabilities
+vulnerability = "deny"
+# The lint level for unmaintained crates
+unmaintained = "warn"
+# The lint level for crates that have been yanked from their registry
+yanked = "warn"
+# The lint level for crates with security notices
+notice = "warn"
+
+# This section is considered when running `cargo deny check licenses`
+# More documentation at: https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
+[licenses]
+# The lint level for crates which do not have a detectable license
+unlicensed = "deny"
+# List of explicitly allowed licenses
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "Unicode-DFS-2016",
+    "MPL-2.0",
+    "ISC",
+    "OpenSSL",
+]
+# List of explicitly denied licenses
+deny = [
+    "GPL-2.0",
+    "GPL-3.0",
+]
+
+# This section is considered when running `cargo deny check bans`
+# More documentation at: https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html
+[bans]
+# The lint level for when multiple versions of the same crate are detected
+multiple-versions = "warn"
+# The lint level for when a crate version requirement is `*`
+wildcards = "allow"
+# List of crates that are explicitly denied
+deny = []
+
+# This section is considered when running `cargo deny check sources`
+# More documentation at: https://embarkstudios.github.io/cargo-deny/checks/sources/cfg.html
+[sources]
+# What to do when a crate from a registry that is not in the allow list is encountered
+unknown-registry = "warn"
+# What to do when a crate from a git repository that is not in the allow list is encountered
+unknown-git = "warn"
+# List of registries that are allowed
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# List of git repositories that are allowed
+allow-git = []
