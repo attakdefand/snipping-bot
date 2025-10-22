@@ -1,5 +1,5 @@
-use sniper_core::types::{ChainRef, ExecMode, ExitRules, GasPolicy, Signal, TradePlan};
 use sniper_core::bus::InMemoryBus;
+use sniper_core::types::{ChainRef, ExecMode, ExitRules, GasPolicy, Signal, TradePlan};
 use tokio::time::{sleep, Duration};
 
 #[tokio::main]

@@ -1,0 +1,239 @@
+name: Security CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run a full security scan every day at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      security_level:
+        description: "Security scan level (quick/full)"
+        required: false
+        default: "quick"
+        type: choice
+        options:
+          - quick
+          - full
+
+env:
+  RUSTUP_TOOLCHAIN: stable
+
+jobs:
+  # Pre-commit / local checks
+  pre_commit_security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt, clippy
+          override: true
+
+      - name: Rust fmt & clippy
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Secrets scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # SCA & SBOM generation
+  supply_chain_audit:
+    needs: pre_commit_security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Cargo registry & target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install security tools
+        run: |
+          cargo install cargo-audit cargo-deny --locked || true
+
+      - name: Run cargo-audit (RustSec)
+        run: |
+          cargo audit --deny warnings
+
+      - name: Run cargo-deny checks
+        run: |
+          cargo deny check bans sources licenses
+
+      - name: Generate SBOM (syft)
+        uses: anchore/sbom-action@v0
+        with:
+          format: spdx-json
+          upload-artifact: true
+
+  # SAST / policy checks
+  static_analysis:
+    needs: supply_chain_audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Cargo registry & target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install SAST tools
+        run: |
+          cargo install cargo-udeps cargo-machete --locked || true
+
+      - name: Check for unused dependencies
+        run: |
+          cargo udeps --all-targets
+
+      - name: Check for unused Cargo.toml entries
+        run: |
+          cargo machete
+
+      - name: Run semgrep rules for Rust
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            r/rust
+            p/security-audit
+            p/secrets
+        if: ${{ github.event.inputs.security_level == 'full' || github.event_name == 'schedule' }}
+
+  # IaC & container security
+  infrastructure_security:
+    needs: static_analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: IaC scan (k8s/helm)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra/k8s/
+          framework: kubernetes
+        continue-on-error: true
+
+      - name: Dockerfile scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: 'config'
+          hide-progress: false
+
+      - name: Build image for scanning
+        run: |
+          # Build a minimal image for scanning
+          docker build -t snipping-bot:${{ github.sha }} -f Dockerfile.example .
+
+      - name: Container scan (trivy)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: 'snipping-bot:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # API contract testing
+  api_security:
+    needs: infrastructure_security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python for schemathesis
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install schemathesis
+        run: |
+          pip install schemathesis
+
+      - name: Run API schema tests
+        run: |
+          # If openapi.yaml exists, run schemathesis tests
+          if [ -f "openapi.yaml" ]; then
+            schemathesis run openapi.yaml --checks all --stateful=links
+          else
+            echo "No openapi.yaml found, skipping API tests"
+          fi
+        continue-on-error: true
+
+  # DAST scanning
+  dynamic_analysis:
+    needs: api_security
+    runs-on: ubuntu-latest
+    services:
+      # Start a test service if needed
+      test-service:
+        image: nginx:latest
+        ports:
+          - 8080:80
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:8080'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+        continue-on-error: true
+
+  # Security reporting
+  security_report:
+    needs: [pre_commit_security, supply_chain_audit, static_analysis, infrastructure_security, api_security, dynamic_analysis]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collect security results
+        run: |
+          echo "Security scan completed"
+          echo "Results:"
+          echo "- Pre-commit checks: ${{ needs.pre_commit_security.result }}"
+          echo "- Supply chain audit: ${{ needs.supply_chain_audit.result }}"
+          echo "- Static analysis: ${{ needs.static_analysis.result }}"
+          echo "- Infrastructure security: ${{ needs.infrastructure_security.result }}"
+          echo "- API security: ${{ needs.api_security.result }}"
+          echo "- Dynamic analysis: ${{ needs.dynamic_analysis.result }}"
+
+      - name: Create security summary
+        run: |
+          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-commit checks | ${{ needs.pre_commit_security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Supply chain audit | ${{ needs.supply_chain_audit.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Static analysis | ${{ needs.static_analysis.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Infrastructure security | ${{ needs.infrastructure_security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API security | ${{ needs.api_security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dynamic analysis | ${{ needs.dynamic_analysis.result }} |" >> $GITHUB_STEP_SUMMARY

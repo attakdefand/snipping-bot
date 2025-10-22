@@ -11,6 +11,14 @@ on:
         description: "Run integration tests requiring Redis"
         required: false
         default: "false"
+      security_level:
+        description: "Security scan level (quick/full)"
+        required: false
+        default: "quick"
+        type: choice
+        options:
+          - quick
+          - full
 
 env:
   RUSTUP_TOOLCHAIN: stable
@@ -46,14 +54,25 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install cargo-audit
+      - name: Install security tools
         run: |
-          cargo install cargo-audit --version 0.17.0 || true
-          # if cargo-audit already present this will no-op; pin version if desired
+          cargo install cargo-audit cargo-deny --locked || true
       - name: Run cargo-audit (RustSec)
         run: |
-          cargo audit --deny advisories || true
-        continue-on-error: false
+          cargo audit --deny warnings
+      - name: Run cargo-deny checks
+        run: |
+          cargo deny check bans sources licenses
+      - name: Secrets scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ github.event.inputs.security_level == 'full' }}
+      - name: Check for unused dependencies
+        run: |
+          cargo install cargo-udeps --locked || true
+          cargo udeps --all-targets
+        if: ${{ github.event.inputs.security_level == 'full' }}
 
   fmt_clippy:
     needs: setup-toolchain

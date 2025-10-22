@@ -1,5 +1,5 @@
-use sniper_core::types::{Decision, ExecReceipt, TradePlan};
 use sniper_core::bus::InMemoryBus;
+use sniper_core::types::{Decision, ExecReceipt, TradePlan};
 use tokio::time::{sleep, Duration};
 
 #[tokio::main]

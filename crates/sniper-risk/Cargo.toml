@@ -2,10 +2,10 @@
 name = "sniper-risk"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
 
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true }
-tracing = { workspace = true }
 tokio = { workspace = true }
-sniper-core = { version = "0.1.0", path = "../sniper-core" }
+tracing = { workspace = true }

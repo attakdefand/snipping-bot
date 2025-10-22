@@ -4,7 +4,7 @@ members = [
   "crates/sniper-core","crates/sniper-keys","crates/sniper-chain","crates/sniper-signals",
   "crates/sniper-amm","crates/sniper-risk","crates/sniper-sim","crates/sniper-exec",
   "crates/sniper-exit","crates/sniper-nft","crates/sniper-cex","crates/sniper-telemetry",
-  "crates/sniper-storage","crates/sniper-policy",
+  "crates/sniper-storage","crates/sniper-policy","crates/sniper-security",
   "crates/svc-gateway","crates/svc-signals","crates/svc-strategy","crates/svc-executor",
   "crates/svc-risk","crates/svc-nft","crates/svc-cex","crates/svc-policy","crates/svc-storage"
 ]
@@ -16,7 +16,7 @@ rust-version = "1.80"
 
 [workspace.dependencies]
 anyhow = "1"
-thiserror = "2"
+thiserror = "1"
 serde = { version="1", features=["derive"] }
 serde_json = "1"
 toml = "0.8"

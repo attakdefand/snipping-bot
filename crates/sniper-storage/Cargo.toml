@@ -2,13 +2,10 @@
 name = "sniper-storage"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
 
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true }
-tracing = { workspace = true }
 tokio = { workspace = true }
-sqlx = { workspace = true, features = ["runtime-tokio-rustls", "sqlite", "postgres", "uuid", "migrate"] }
-redis = { workspace = true, features = ["tokio-comp"] }
-chrono = { workspace = true, features = ["serde"] }
-uuid = { workspace = true, features = ["v4"] }
+tracing = { workspace = true }
