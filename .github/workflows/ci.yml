@@ -124,6 +124,11 @@ jobs:
     needs: [security-scan, code-quality, build, integration-test, compliance-check]
     if: always()
     steps:
+      - name: Check Secrets Availability
+        run: |
+          echo "TELEGRAM_BOT_TOKEN present: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}"
+          echo "TELEGRAM_CHAT_ID present: ${{ secrets.TELEGRAM_CHAT_ID != '' }}"
+      
       - name: Send Telegram Notification
         uses: appleboy/telegram-action@v0.1.1
         with:
@@ -144,3 +149,4 @@ jobs:
             - Compliance Check: ${{ needs.compliance-check.result }}
             
             View Details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          debug: true
