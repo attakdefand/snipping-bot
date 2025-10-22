@@ -39,7 +39,7 @@ tonic = "0.12"
 tower = "0.5"
 tower-http = { version="0.5", features=["cors","trace","compression-full"] }
 sqlx = { version="0.8.1", features=["runtime-tokio-rustls","postgres","sqlite","uuid","migrate"] }
-redis = { version="0.25", features=["tokio-comp"] }
+redis = { version="0.32", features=["tokio-comp"] }
 time = "0.3"
 async-trait = "0.1"
 uuid = { version = "1.0", features = ["v4", "serde"] }
