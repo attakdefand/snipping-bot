@@ -1,0 +1,32 @@
+name: Test Telegram Notification
+
+on:
+  push:
+    branches: [ test-telegram ]
+  workflow_dispatch:
+
+jobs:
+  test-telegram:
+    name: Test Telegram Notification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Secrets Availability
+        run: |
+          echo "TELEGRAM_BOT_TOKEN present: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}"
+          echo "TELEGRAM_CHAT_ID present: ${{ secrets.TELEGRAM_CHAT_ID != '' }}"
+      
+      - name: Send Telegram Notification
+        uses: appleboy/telegram-action@v0.1.1
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🚀 Test Telegram Notification
+            
+            This is a test message to verify that Telegram notifications are working correctly.
+            
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+          debug: true
