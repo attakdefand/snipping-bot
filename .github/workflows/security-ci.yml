@@ -27,7 +27,7 @@ jobs:
   pre_commit_security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -54,7 +54,7 @@ jobs:
     needs: pre_commit_security
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Cache Cargo registry & target
         uses: actions/cache@v4
@@ -88,7 +88,7 @@ jobs:
     needs: supply_chain_audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Cache Cargo registry & target
         uses: actions/cache@v4
@@ -125,7 +125,7 @@ jobs:
     needs: static_analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: IaC scan (k8s/helm)
         uses: bridgecrewio/checkov-action@v12
@@ -164,7 +164,7 @@ jobs:
     needs: infrastructure_security
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python for schemathesis
         uses: actions/setup-python@v5
@@ -196,7 +196,7 @@ jobs:
         ports:
           - 8080:80
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: OWASP ZAP baseline scan
         uses: zaproxy/action-baseline@v0.12.0
@@ -212,7 +212,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Collect security results
         run: |
