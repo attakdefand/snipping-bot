@@ -40,7 +40,11 @@ impl InputValidator {
     }
 
     /// Validate a string input against rules
-    pub fn validate_string(&self, input: &str, rules: &ValidationRules) -> Result<ValidationResult> {
+    pub fn validate_string(
+        &self,
+        input: &str,
+        rules: &ValidationRules,
+    ) -> Result<ValidationResult> {
         // Check if required
         if rules.required && input.is_empty() {
             return Ok(ValidationResult {
@@ -54,7 +58,10 @@ impl InputValidator {
             if input.len() < min_length {
                 return Ok(ValidationResult {
                     is_valid: false,
-                    error_message: Some(format!("Input must be at least {} characters", min_length)),
+                    error_message: Some(format!(
+                        "Input must be at least {} characters",
+                        min_length
+                    )),
                 });
             }
         }
@@ -64,7 +71,10 @@ impl InputValidator {
             if input.len() > max_length {
                 return Ok(ValidationResult {
                     is_valid: false,
-                    error_message: Some(format!("Input must be no more than {} characters", max_length)),
+                    error_message: Some(format!(
+                        "Input must be no more than {} characters",
+                        max_length
+                    )),
                 });
             }
         }
@@ -138,14 +148,18 @@ mod tests {
     #[test]
     fn test_valid_address() {
         let validator = InputValidator::new();
-        let result = validator.validate_address("0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6").unwrap();
+        let result = validator
+            .validate_address("0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6")
+            .unwrap();
         assert!(result.is_valid);
     }
 
     #[test]
     fn test_invalid_address_length() {
         let validator = InputValidator::new();
-        let result = validator.validate_address("0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8").unwrap();
+        let result = validator
+            .validate_address("0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8")
+            .unwrap();
         assert!(!result.is_valid);
         assert!(result.error_message.is_some());
     }
@@ -153,7 +167,9 @@ mod tests {
     #[test]
     fn test_invalid_address_pattern() {
         let validator = InputValidator::new();
-        let result = validator.validate_address("0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8bG").unwrap();
+        let result = validator
+            .validate_address("0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8bG")
+            .unwrap();
         assert!(!result.is_valid);
         assert!(result.error_message.is_some());
     }
@@ -183,7 +199,7 @@ mod tests {
             required: true,
             allowed_values: None,
         };
-        
+
         let result = validator.validate_string("", &rules).unwrap();
         assert!(!result.is_valid);
         assert_eq!(result.error_message, Some("Input is required".to_string()));

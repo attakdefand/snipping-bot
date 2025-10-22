@@ -53,70 +53,70 @@ impl CeiValidator {
     /// Check if a function follows the CEI pattern
     pub fn validate_function(&self, function_code: &str) -> Result<CeiValidationResult> {
         let mut violations = Vec::new();
-        
+
         // Check for common CEI violations
         if self.has_external_call_before_state_change(function_code) {
             violations.push(CeiViolation::ExternalCallBeforeStateChange);
         }
-        
+
         if self.has_state_change_after_external_call(function_code) {
             violations.push(CeiViolation::StateChangeAfterExternalCall);
         }
-        
+
         if self.has_multiple_external_calls(function_code) {
             violations.push(CeiViolation::MultipleExternalCalls);
         }
-        
+
         if self.has_missing_validation(function_code) {
             violations.push(CeiViolation::MissingValidation);
         }
-        
+
         let is_valid = violations.is_empty();
         let analysis = if is_valid {
             "Function follows CEI pattern".to_string()
         } else {
             format!("Function has {} CEI violations", violations.len())
         };
-        
+
         Ok(CeiValidationResult {
             is_valid,
             violations,
             analysis,
         })
     }
-    
+
     /// Check for external calls before state changes
     fn has_external_call_before_state_change(&self, function_code: &str) -> bool {
         // Look for patterns like external calls followed by state changes
         // This is a simplified check - a real implementation would parse the AST
         let call_pos = function_code.find("transfer(");
         let state_pos = function_code.find("balances[");
-        
+
         match (call_pos, state_pos) {
             (Some(call_pos), Some(state_pos)) => call_pos < state_pos,
-            _ => false
+            _ => false,
         }
     }
-    
+
     /// Check for state changes after external calls
     fn has_state_change_after_external_call(&self, function_code: &str) -> bool {
         // Look for patterns like state changes after external calls
         let call_pos = function_code.find("transfer(");
         let state_pos = function_code.find("balances[");
-        
+
         match (call_pos, state_pos) {
             (Some(call_pos), Some(state_pos)) => state_pos > call_pos,
-            _ => false
+            _ => false,
         }
     }
-    
+
     /// Check for multiple external calls
     fn has_multiple_external_calls(&self, function_code: &str) -> bool {
         // Count occurrences of external calls
         let call_count = function_code.matches("transfer(").count();
         call_count > 1
     }
-    
+
     /// Check for missing validation
     fn has_missing_validation(&self, function_code: &str) -> bool {
         // Check if there are validation checks
@@ -148,7 +148,7 @@ mod tests {
                 emit Transfer(msg.sender, to, amount);
             }
         "#;
-        
+
         let result = validator.validate_function(function_code).unwrap();
         assert!(result.is_valid);
         assert_eq!(result.violations.len(), 0);
@@ -165,11 +165,13 @@ mod tests {
                 balances[to] += amount;
             }
         "#;
-        
+
         let result = validator.validate_function(function_code).unwrap();
         println!("Violations: {:?}", result.violations);
         assert!(!result.is_valid);
-        assert!(result.violations.contains(&CeiViolation::ExternalCallBeforeStateChange));
+        assert!(result
+            .violations
+            .contains(&CeiViolation::ExternalCallBeforeStateChange));
     }
 
     #[test]
@@ -186,12 +188,14 @@ mod tests {
                 ERC20(token2).transfer(to, amount);  // Second external call
             }
         "#;
-        
+
         let result = validator.validate_function(function_code).unwrap();
         println!("Is valid: {}", result.is_valid);
         println!("Violations: {:?}", result.violations);
         assert!(!result.is_valid);
-        assert!(result.violations.contains(&CeiViolation::MultipleExternalCalls));
+        assert!(result
+            .violations
+            .contains(&CeiViolation::MultipleExternalCalls));
     }
 
     #[test]
@@ -205,7 +209,7 @@ mod tests {
                 ERC20(token).transfer(to, amount);
             }
         "#;
-        
+
         let result = validator.validate_function(function_code).unwrap();
         assert!(!result.is_valid);
         assert!(result.violations.contains(&CeiViolation::MissingValidation));
