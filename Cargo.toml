@@ -5,6 +5,7 @@ members = [
   "crates/sniper-amm","crates/sniper-risk","crates/sniper-sim","crates/sniper-exec",
   "crates/sniper-exit","crates/sniper-nft","crates/sniper-cex","crates/sniper-telemetry",
   "crates/sniper-storage","crates/sniper-policy","crates/sniper-security",
+  "crates/sniper-validation",
   "crates/svc-gateway","crates/svc-signals","crates/svc-strategy","crates/svc-executor",
   "crates/svc-risk","crates/svc-nft","crates/svc-cex","crates/svc-policy","crates/svc-storage"
 ]
@@ -44,3 +45,4 @@ time = "0.3"
 async-trait = "0.1"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+regex = "1"

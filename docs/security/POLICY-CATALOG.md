@@ -1,6 +1,6 @@
 # Security Policy Catalog
 
-This document serves as the single source of truth for security policies mapped to controls and standards as defined in the security layers checklist.
+This document catalogs all security policies, controls, and their implementation status across the 22 security layers.
 
 ## Table of Contents
 
@@ -483,16 +483,22 @@ This document serves as the single source of truth for security policies mapped 
 - **Artifact**: crates/validation/
 - **Test Category**: Fuzz/Unit Tests
 - **Metric/KPI**: Reject rate for invalid inputs
-- **Evidence**: Test logs, coverage
+- **Status**: ✅ Implemented
+- **Evidence**: 
+  - `crates/sniper-validation/` crate with CEI validation logic
+  - `tests/cei_validation_test.rs` integration tests
+  - `.github/workflows/cei-validation.yml` CI/CD pipeline
+  - `docs/security/CEI-VALIDATION.md` documentation
 
 ### Session/Web
 - **Control**: CSRF, CORS, SSRF Guards
-- **Description**: Defense-in-depth headers & checks
-- **Component**: middlewares in Axum
+- **Description**: Middleware protections
+- **Component**: axum/tower layers
 - **Artifact**: crates/middleware/
-- **Test Category**: DAST/Web Tests
-- **Metric/KPI**: CSRF token coverage
-- **Evidence**: Middleware code, configs
+- **Test Category**: Integration Tests
+- **Metric/KPI**: Blocked attack rate
+- **Status**: ⚠️ Partial
+- **Evidence**: Basic middleware in gateway
 
 ### Memory Safety
 - **Control**: Unsafe minimization

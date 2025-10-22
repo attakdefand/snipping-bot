@@ -1,0 +1,71 @@
+name: Auto Push Changes
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # needed for pushing with GITHUB_TOKEN
+  pull-requests: write
+
+concurrency:
+  group: autopush-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-autopush:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      # --- OPTIONAL: your build / test / format / codegen steps ---
+      # Add or swap these for your stack (Rust, Node, etc.)
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build & Test
+        run: |
+          cargo build --locked
+          cargo test --locked --all
+      - name: Format (no fail on change)
+        run: |
+          cargo fmt --all
+          true
+
+      # Example: regenerate docs or code (replace with your generator)
+      - name: Example codegen step (optional)
+        run: |
+          echo "// updated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > .autogen-stamp
+
+      # --- COMMIT & PUSH IF CHANGED ---
+      - name: Set up git persona
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit changes if any
+        id: commit
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add -A
+            git commit -m "chore(auto-push): apply workflow changes [skip ci]"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changes to commit."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push back to branch
+        if: steps.commit.outputs.changed == 'true'
+        run: |
+          # Push to the same ref that triggered the workflow
+          git push origin "HEAD:${GITHUB_REF#refs/heads/}"

@@ -1,0 +1,92 @@
+name: Auto Pull from Upstream
+
+on:
+  schedule:
+    - cron: "17 3 * * *"   # daily at 03:17 UTC; tweak to your preference
+  workflow_dispatch:
+    inputs:
+      upstream_repo:
+        description: "owner/repo of upstream (overrides secret)"
+        required: false
+      upstream_branch:
+        description: "Branch to sync from (default: main)"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: autopull-upstream
+  cancel-in-progress: false
+
+env:
+  # Set a default upstream here, or override via workflow_dispatch input
+  DEFAULT_UPSTREAM_REPO: your-upstream-owner/your-upstream-repo
+  DEFAULT_UPSTREAM_BRANCH: main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Resolve upstream source
+        id: cfg
+        run: |
+          UP_REPO="${{ github.event.inputs.upstream_repo }}"
+          UP_BRANCH="${{ github.event.inputs.upstream_branch }}"
+          if [ -z "$UP_REPO" ]; then UP_REPO="${DEFAULT_UPSTREAM_REPO}"; fi
+          if [ -z "$UP_BRANCH" ]; then UP_BRANCH="${DEFAULT_UPSTREAM_BRANCH}"; fi
+          echo "up_repo=$UP_REPO"       >> $GITHUB_OUTPUT
+          echo "up_branch=$UP_BRANCH"   >> $GITHUB_OUTPUT
+
+      - name: Add upstream remote & fetch
+        run: |
+          git remote add upstream "https://github.com/${{ steps.cfg.outputs.up_repo }}.git" || true
+          git fetch upstream "${{ steps.cfg.outputs.up_branch }}"
+
+      - name: Create sync branch
+        run: |
+          SYNC_BRANCH="autopull/upstream-${{ steps.cfg.outputs.up_branch }}-$(date -u +%Y%m%d-%H%M%S)"
+          echo "SYNC_BRANCH=$SYNC_BRANCH" >> $GITHUB_ENV
+          git checkout -b "$SYNC_BRANCH"
+
+      - name: Merge upstream changes (no-ff, keep history)
+        run: |
+          set -e
+          # Try a merge first; if conflicts occur, abort and let PR show them
+          if ! git merge --no-ff "upstream/${{ steps.cfg.outputs.up_branch }}"; then
+            echo "Merge conflicts detected. Committing conflict markers for PR resolution."
+            # Optionally stop here with non-zero to fail the job instead:
+            # exit 1
+          fi
+
+      - name: Push branch
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git push origin "$SYNC_BRANCH"
+
+      - name: Open Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ env.SYNC_BRANCH }}
+          title: "chore(sync): merge upstream ${{ steps.cfg.outputs.up_repo }}@${{ steps.cfg.outputs.up_branch }}"
+          body: |
+            Automated upstream sync.
+
+            - Upstream: `${{ steps.cfg.outputs.up_repo }}`
+            - Branch: `${{ steps.cfg.outputs.up_branch }}`
+            - Created by: GitHub Actions
+          labels: |
+            sync
+            automated
+          commit-message: "chore(sync): merge upstream [skip ci]"
+          signoff: false
+          draft: false
