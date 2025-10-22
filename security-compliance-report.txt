@@ -1,0 +1,278 @@
+SECURITY COMPLIANCE REPORT
+==================================================
+Generated: 2025-10-23T01:44:33.329998
+
+SUMMARY
+--------------------
+Total Controls: 87
+Implemented: 7
+Missing: 80
+Not Applicable: 0
+Compliance Rate: 8.05%
+
+LAYER STATISTICS
+--------------------
+Layer 1: 4/4 (100.0%)
+Layer 2: 1/3 (33.3%)
+Layer 3: 0/4 (0.0%)
+Layer 4: 0/4 (0.0%)
+Layer 5: 1/4 (25.0%)
+Layer 6: 0/4 (0.0%)
+Layer 7: 0/4 (0.0%)
+Layer 8: 0/4 (0.0%)
+Layer 9: 0/4 (0.0%)
+Layer 10: 0/4 (0.0%)
+Layer 11: 0/4 (0.0%)
+Layer 12: 0/4 (0.0%)
+Layer 13: 1/4 (25.0%)
+Layer 14: 0/4 (0.0%)
+Layer 15: 0/4 (0.0%)
+Layer 16: 0/4 (0.0%)
+Layer 17: 0/4 (0.0%)
+Layer 18: 0/4 (0.0%)
+Layer 19: 0/4 (0.0%)
+Layer 20: 0/4 (0.0%)
+Layer 21: 0/4 (0.0%)
+Layer 22: 0/4 (0.0%)
+
+MISSING CONTROLS
+--------------------
+Layer 2: Methodologies - STRIDE / LINDDUN / Attack Trees
+  Artifact: docs/security/THREAT-MDL.md
+
+Layer 2: Abuse Cases - Misuse/Abuse Scenarios
+  Artifact: tests/abuse/
+
+Layer 3: Code Scanning - SAST/Secret Scan
+  Artifact: .github/workflows/security.yml
+
+Layer 3: Dependency Health - SCA/SBOM
+  Artifact: sbom/syft.spdx.json
+
+Layer 3: Build Integrity - Sigstore/Cosign & Reproducible Builds
+  Artifact: attestations/cosign.json
+
+Layer 3: PR Gates - Security PR Checks
+  Artifact: CODEOWNERS, .github/
+
+Layer 4: AuthN - OAuth2/OIDC, MFA
+  Artifact: config/idp.json
+
+Layer 4: AuthZ - RBAC/ABAC, Least Privilege
+  Artifact: policy/authz.rego
+
+Layer 4: JIT Access - Just-in-Time & Break-glass
+  Artifact: runbooks/JIT.md
+
+Layer 4: Key Rotation - Credential & Token Rotation
+  Artifact: k8s/cron/rotate.yaml
+
+Layer 5: Storage - Vault/SOPS
+  Artifact: infra/vault/
+
+Layer 5: Separation - Env Separation & Scoping
+  Artifact: k8s/namespaces.yaml
+
+Layer 5: Rotation - Automated Rotation
+  Artifact: jobs/rotate-*.yaml
+
+Layer 6: KMS/HSM - Centralized Key Management
+  Artifact: kms/policies.json
+
+Layer 6: TLS Policy - Cipher Suites & TLS
+  Artifact: k8s/ingress-tls.yaml
+
+Layer 6: Deterministic/Non-det Crypto - Crypto Rules
+  Artifact: docs/security/CRYPTO-RULES.md
+
+Layer 6: Key Ops - Split Knowledge, Dual Control
+  Artifact: runbooks/KEY-OPS.md
+
+Layer 7: Zero-Trust - Default-Deny East/West
+  Artifact: k8s/networkpolicies.yaml
+
+Layer 7: mTLS - Service-to-Service AuthN
+  Artifact: mesh/config.yaml
+
+Layer 7: Egress Control - Outbound Allow-List
+  Artifact: k8s/egress.yaml
+
+Layer 7: Ingress Control - North/South Filtering
+  Artifact: k8s/ingress-waf.yaml
+
+Layer 8: WAF - OWASP Top 10 Filters
+  Artifact: waf/rules.conf
+
+Layer 8: Rate Limit - Global & Per-Token Limits
+  Artifact: gateway/ratelimit.yaml
+
+Layer 8: Schema Validation - Strict Request/Response Schemas
+  Artifact: api/schema/
+
+Layer 8: Bot Defense - Bot/Automation Controls
+  Artifact: gateway/bot.yaml
+
+Layer 9: Baselines - CIS Baselines
+  Artifact: infra/images/
+
+Layer 9: Exploit Mitigations - ASLR/PIE, NX, CFI
+  Artifact: build/flags.toml
+
+Layer 9: EDR - Endpoint Detection & Response
+  Artifact: edr/config.yaml
+
+Layer 9: SSH/Access - SSH Hardening & PAM
+  Artifact: infra/ssh/sshd_config
+
+Layer 10: Images - Minimal, Signed, Non-root
+  Artifact: docker/
+
+Layer 10: Policies - PSP/OPA Gatekeeper
+  Artifact: k8s/policy/
+
+Layer 10: Runtime - seccomp/AppArmor
+  Artifact: k8s/seccomp/
+
+Layer 10: Scheduling - Node/Pod Security & Quotas
+  Artifact: k8s/limits.yaml
+
+Layer 11: Account Guardrails - Org SCP/Projects
+  Artifact: infra/cloud/guardrails/
+
+Layer 11: Compute Images - Hardened AMIs/Images
+  Artifact: infra/images/packer.json
+
+Layer 11: Network - SG/NACL Baselines
+  Artifact: infra/network/
+
+Layer 11: Metadata - IMDSv2/Metadata Hardening
+  Artifact: infra/compute/metadata.json
+
+Layer 12: Classification - Data Classes & Tags
+  Artifact: data/classification.yaml
+
+Layer 12: Encryption at Rest - Transparent & Field-level
+  Artifact: db/encryption.yaml
+
+Layer 12: Masking/Tokenization - PII Handling
+  Artifact: data/masking.yaml
+
+Layer 12: Backups - Encrypted Backups & Restore Drills
+  Artifact: jobs/backup-restore.yaml
+
+Layer 13: Input Validation - Strict Validation & CEI
+  Artifact: crates/validation/
+
+Layer 13: Session/Web - CSRF, CORS, SSRF Guards
+  Artifact: crates/middleware/
+
+Layer 13: Invariants - Business Invariant Checks
+  Artifact: crates/invariants/
+
+Layer 14: Contracts - OpenAPI/GraphQL/gRPC
+  Artifact: api/openapi.yaml
+
+Layer 14: Pagination & ETags - DoS-safe patterns
+  Artifact: crates/http/
+
+Layer 14: Query Costing - Cost Limits/Complexity
+  Artifact: api/graphql/policy.json
+
+Layer 14: Schema Diffs - Automated Drift Detection
+  Artifact: ci/schema-diff.yaml
+
+Layer 15: AuthN/Z - NATS/JetStream ACLs
+  Artifact: nats/auth.conf
+
+Layer 15: Idempotency - Idempotency Keys & Dedupe
+  Artifact: crates/idempotency/
+
+Layer 15: Replay Protection - Nonces/Timestamps
+  Artifact: crates/middleware/
+
+Layer 15: Encryption - At-rest & in-transit
+  Artifact: nats/nkey/
+
+Layer 16: RBAC - DB Roles & Least Privilege
+  Artifact: db/migrations/roles.sql
+
+Layer 16: RLS/CLS - Row/Column-level Security
+  Artifact: db/rls.sql
+
+Layer 16: TLS & Audit - Encrypted Links & Audit
+  Artifact: db/postgresql.conf
+
+Layer 16: Backups/Restore - Encrypted Backups
+  Artifact: backup/
+
+Layer 17: Tiers - Hot/Warm/Cold Segregation
+  Artifact: custody/policy.yaml
+
+Layer 17: MPC/Multi-sig - Threshold Signing
+  Artifact: custody/mpc/
+
+Layer 17: Withdrawal Policy - Velocity/Cooldowns
+  Artifact: policies/withdrawal.yaml
+
+Layer 17: Address Mgmt - Allow/Block Lists
+  Artifact: custody/screen.yaml
+
+Layer 18: Aggregation - TWAP/Medianizers
+  Artifact: oracle/aggregator.yaml
+
+Layer 18: Heartbeat/Staleness - Max Age Policies
+  Artifact: oracle/heartbeat.yaml
+
+Layer 18: Deviation Guards - Max % Change
+  Artifact: oracle/deviation.yaml
+
+Layer 18: Quorum - Cross-source Voting
+  Artifact: oracle/quorum.yaml
+
+Layer 19: Minimization - Collect-Only-What-Needed
+  Artifact: privacy/PIA.md
+
+Layer 19: DSR Flows - Access/Delete/Export
+  Artifact: privacy/dsr.yaml
+
+Layer 19: Retention - Time-bound Deletion
+  Artifact: data/retention.yaml
+
+Layer 19: Regionalization - Data Residency
+  Artifact: infra/geo/
+
+Layer 20: Structured Logging - PII Scrubbing
+  Artifact: otel/redaction.yaml
+
+Layer 20: Metrics/Traces Access - RBAC on Observability
+  Artifact: observability/rbac.yaml
+
+Layer 20: Tamper Evidence - Immutable Logs
+  Artifact: observability/tamper.yaml
+
+Layer 20: Trace Sampling - Dynamic Sampling
+  Artifact: otel/sampling.yaml
+
+Layer 21: Use Cases - SIEM Rules & Detections
+  Artifact: siem/rules/
+
+Layer 21: Anomaly Models - UEBA/Anomaly
+  Artifact: siem/ueba/
+
+Layer 21: Runbooks - IR Runbooks & On-call
+  Artifact: docs/runbooks/*
+
+Layer 21: Forensics - Acquisition & Chain of Custody
+  Artifact: ir/forensics/
+
+Layer 22: Rate Limiters - Backpressure & Quotas
+  Artifact: crates/ratelimit/
+
+Layer 22: Circuit Breakers - Fail-Fast
+  Artifact: crates/circuit/
+
+Layer 22: Bulkheads - Isolate Pools
+  Artifact: crates/bulkhead/
+
+Layer 22: DR/BCP - Disaster Recovery
+  Artifact: docs/dr/PLAN.md
