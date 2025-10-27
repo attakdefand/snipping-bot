@@ -122,7 +122,7 @@ jobs:
           echo "Security Compliance: ${{ needs.security_compliance.result }}" >> validation-results.txt
 
       - name: Upload validation results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: cei-validation-results
           path: validation-results.txt
