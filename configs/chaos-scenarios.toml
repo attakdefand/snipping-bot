@@ -1,0 +1,45 @@
+# Example chaos testing scenarios
+
+[scenarios]
+enabled = true
+
+# Network latency scenarios
+[[scenarios.network_latency]]
+venue = "all"
+base_latency_ms = 50
+additional_latency_ms = 100
+affected_percentage = 0.1
+duration_hours = 2
+start_time = "2023-02-15T10:00:00Z"
+
+[[scenarios.network_latency]]
+venue = "binance"
+base_latency_ms = 20
+additional_latency_ms = 200
+affected_percentage = 0.05
+duration_hours = 1
+start_time = "2023-03-01T14:00:00Z"
+
+# Exchange outage scenarios
+[[scenarios.exchange_outage]]
+venue = "kucoin"
+duration_hours = 4
+start_time = "2023-02-20T02:00:00Z"
+
+# Gas spike scenarios (DEX focused)
+[[scenarios.gas_spike]]
+multiplier = 5.0
+duration_hours = 1
+start_time = "2023-03-10T12:00:00Z"
+
+# Market volatility scenarios
+[[scenarios.market_volatility]]
+multiplier = 2.0
+duration_hours = 24
+start_time = "2023-02-25T00:00:00Z"
+
+# Order book staleness scenarios
+[[scenarios.order_book_staleness]]
+venue = "uniswap"
+duration_hours = 1
+start_time = "2023-03-05T09:00:00Z"

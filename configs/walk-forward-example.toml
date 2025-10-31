@@ -1,0 +1,28 @@
+# Example walk-forward optimization configuration
+
+[walk_forward]
+train_window_days = 30
+test_window_days = 15
+step_days = 10
+min_train_trades = 50
+min_test_trades = 25
+
+[optimization]
+# Parameters to optimize
+parameters = ["risk.max_leverage", "exec.slippage.k", "risk.max_pos_notional_usd"]
+
+# Search space for each parameter
+risk_max_leverage = { min = 1.0, max = 5.0, step = 0.5 }
+exec_slippage_k = { min = 0.1, max = 2.0, step = 0.1 }
+risk_max_pos_notional_usd = { min = 10000, max = 100000, step = 10000 }
+
+[validation]
+# Validation criteria
+min_sharpe_ratio = 1.0
+max_drawdown_pct = 20.0
+min_win_rate = 0.5
+
+[early_stopping]
+# Early stopping criteria
+patience = 5
+min_improvement = 0.01

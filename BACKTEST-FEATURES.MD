@@ -292,4 +292,3 @@ mark = "mid"             # mid | last | bidask
 
 ---
 
-If you want, I can generate a minimal Rust skeleton (workspace + crates + traits + a sample CPMM backtest over a CSV) that you can `cargo run` immediately.

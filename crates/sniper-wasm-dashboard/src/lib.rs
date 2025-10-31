@@ -61,14 +61,20 @@ fn switch(routes: Route) -> Html {
 fn dashboard() -> Html {
     // State for metrics
     let metrics = use_state(|| Metrics::default());
+    let trades = use_state(|| Vec::<TradeAnalytics>::new());
     
     // Fetch metrics on component mount
     {
         let metrics = metrics.clone();
+        let trades = trades.clone();
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Ok(fetched_metrics) = fetch_metrics().await {
                     metrics.set(fetched_metrics);
+                }
+                
+                if let Ok(fetched_trades) = fetch_trades().await {
+                    trades.set(fetched_trades);
                 }
             });
             || ()
@@ -86,10 +92,20 @@ fn dashboard() -> Html {
                 <MetricCard title="Avg Return" value={format!("{:.2}%", metrics.avg_return * 100.0)} />
             </div>
             
-            <div class="charts">
-                <h2>{"Performance Chart"}</h2>
-                <div class="chart-placeholder">
-                    {"Performance chart will be displayed here"}
+            <div class="recent-trades">
+                <h2>{"Recent Trades"}</h2>
+                <div class="trades-list">
+                    {for trades.iter().take(5).map(|trade| {
+                        html! {
+                            <div class="trade-item">
+                                <span class="trade-chain">{&trade.chain}</span>
+                                <span class="trade-tokens">{&trade.token_in} {" → "} {&trade.token_out}</span>
+                                <span class="trade-return" style={if trade.actual_return.unwrap_or(0.0) > 0.0 { "color: green;" } else { "color: red;" }}>
+                                    {format!("{:.2}%", trade.actual_return.unwrap_or(0.0) * 100.0)}
+                                </span>
+                            </div>
+                        }
+                    })}
                 </div>
             </div>
         </div>
@@ -99,12 +115,53 @@ fn dashboard() -> Html {
 /// Trades component
 #[function_component(Trades)]
 fn trades() -> Html {
+    let trades = use_state(|| Vec::<TradeAnalytics>::new());
+    
+    {
+        let trades = trades.clone();
+        use_effect_with((), move |_| {
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(fetched_trades) = fetch_trades().await {
+                    trades.set(fetched_trades);
+                }
+            });
+            || ()
+        });
+    }
+    
     html! {
         <div class="trades">
             <h1>{"Recent Trades"}</h1>
-            <div class="trades-table">
-                {"Trades table will be displayed here"}
-            </div>
+            <table class="trades-table">
+                <thead>
+                    <tr>
+                        <th>{"Timestamp"}</th>
+                        <th>{"Chain"}</th>
+                        <th>{"Tokens"}</th>
+                        <th>{"Amount"}</th>
+                        <th>{"Predicted Return"}</th>
+                        <th>{"Actual Return"}</th>
+                        <th>{"Gas Used"}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {for trades.iter().map(|trade| {
+                        html! {
+                            <tr>
+                                <td>{trade.timestamp}</td>
+                                <td>{&trade.chain}</td>
+                                <td>{&trade.token_in} {" → "} {&trade.token_out}</td>
+                                <td>{trade.amount_in}</td>
+                                <td>{format!("{:.2}%", trade.predicted_return * 100.0)}</td>
+                                <td style={if trade.actual_return.unwrap_or(0.0) > 0.0 { "color: green;" } else { "color: red;" }}>
+                                    {format!("{:.2}%", trade.actual_return.unwrap_or(0.0) * 100.0)}
+                                </td>
+                                <td>{trade.gas_used}</td>
+                            </tr>
+                        }
+                    })}
+                </tbody>
+            </table>
         </div>
     }
 }
@@ -112,12 +169,63 @@ fn trades() -> Html {
 /// Portfolio component
 #[function_component(Portfolio)]
 fn portfolio() -> Html {
+    let portfolio = use_state(|| Option::<PortfolioAnalytics>::None);
+    
+    {
+        let portfolio = portfolio.clone();
+        use_effect_with((), move |_| {
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(fetched_portfolio) = fetch_portfolio().await {
+                    portfolio.set(Some(fetched_portfolio));
+                }
+            });
+            || ()
+        });
+    }
+    
     html! {
         <div class="portfolio">
             <h1>{"Portfolio"}</h1>
-            <div class="portfolio-summary">
-                {"Portfolio summary will be displayed here"}
-            </div>
+            {
+                if let Some(portfolio_data) = &*portfolio {
+                    html! {
+                        <>
+                            <div class="portfolio-summary">
+                                <div class="summary-item">
+                                    <h3>{"Total Value"}</h3>
+                                    <p>{format!("${:.2}", portfolio_data.total_value)}</p>
+                                </div>
+                                <div class="summary-item">
+                                    <h3>{"Risk Exposure"}</h3>
+                                    <p>{format!("{:.2}%", portfolio_data.risk_exposure * 100.0)}</p>
+                                </div>
+                                <div class="summary-item">
+                                    <h3>{"Volatility"}</h3>
+                                    <p>{format!("{:.2}%", portfolio_data.volatility * 100.0)}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="asset-allocation">
+                                <h2>{"Asset Allocation"}</h2>
+                                <ul>
+                                    {for portfolio_data.asset_allocation.iter().map(|(asset, allocation)| {
+                                        html! {
+                                            <li>
+                                                <span>{asset}</span>
+                                                <span>{format!("{:.2}%", allocation * 100.0)}</span>
+                                            </li>
+                                        }
+                                    })}
+                                </ul>
+                            </div>
+                        </>
+                    }
+                } else {
+                    html! {
+                        <p>{"Loading portfolio data..."}</p>
+                    }
+                }
+            }
         </div>
     }
 }
@@ -125,11 +233,30 @@ fn portfolio() -> Html {
 /// Settings component
 #[function_component(Settings)]
 fn settings() -> Html {
+    let api_endpoint = use_state(|| "http://localhost:3003".to_string());
+    
+    let on_api_endpoint_change = {
+        let api_endpoint = api_endpoint.clone();
+        Callback::from(move |e: Event| {
+            let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+            api_endpoint.set(input.value());
+        })
+    };
+    
     html! {
         <div class="settings">
             <h1>{"Settings"}</h1>
             <div class="settings-form">
-                {"Settings form will be displayed here"}
+                <div class="form-group">
+                    <label for="api-endpoint">{"API Endpoint"}</label>
+                    <input 
+                        type="text" 
+                        id="api-endpoint" 
+                        value={(*api_endpoint).clone()} 
+                        onchange={on_api_endpoint_change}
+                    />
+                </div>
+                <button>{"Save Settings"}</button>
             </div>
         </div>
     }
@@ -287,6 +414,20 @@ async fn fetch_metrics() -> Result<Metrics, JsValue> {
         win_rate,
         avg_return,
     })
+}
+
+/// Fetch trades from the backend
+async fn fetch_trades() -> Result<Vec<TradeAnalytics>, JsValue> {
+    let response = fetch_from_api("http://localhost:3003/analytics/trades").await?;
+    let trades: Vec<TradeAnalytics> = serde_json::from_str(&response).map_err(|e| JsValue::from_str(&format!("Failed to parse trades: {:?}", e)))?;
+    Ok(trades)
+}
+
+/// Fetch portfolio from the backend
+async fn fetch_portfolio() -> Result<PortfolioAnalytics, JsValue> {
+    let response = fetch_from_api("http://localhost:3003/analytics/portfolio").await?;
+    let portfolio: PortfolioAnalytics = serde_json::from_str(&response).map_err(|e| JsValue::from_str(&format!("Failed to parse portfolio: {:?}", e)))?;
+    Ok(portfolio)
 }
 
 /// Generic function to fetch data from an API endpoint
