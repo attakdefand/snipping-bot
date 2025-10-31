@@ -9,3 +9,8 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+serde_json = { workspace = true }
+csv = "1"
+sniper-core = { path = "../sniper-core" }
+sniper-ml = { path = "../sniper-ml" }
+sniper-risk = { path = "../sniper-risk" }

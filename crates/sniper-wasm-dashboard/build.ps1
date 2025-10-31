@@ -4,14 +4,19 @@
 Write-Host "Building WASM dashboard..."
 
 # Check if wasm-pack is installed
-if (!(Get-Command wasm-pack -ErrorAction SilentlyContinue)) {
+try {
+    $wasmPackVersion = wasm-pack --version
+    Write-Host "Found wasm-pack: $wasmPackVersion"
+} catch {
     Write-Host "Installing wasm-pack..."
-    curl https://rustwasm.github.io/wasm-pack/installer/init.ps1 -UseBasicParsing -o init.ps1
-    .\init.ps1
-    Remove-Item init.ps1
+    # Download and install wasm-pack
+    curl -L https://github.com/rustwasm/wasm-pack/releases/download/v0.12.1/wasm-pack-init.exe -o wasm-pack-init.exe
+    .\wasm-pack-init.exe -y
+    Remove-Item .\wasm-pack-init.exe
 }
 
 # Build the WASM package
+Write-Host "Compiling Rust to WebAssembly..."
 wasm-pack build --target web --out-dir pkg
 
 Write-Host "WASM dashboard built successfully!"

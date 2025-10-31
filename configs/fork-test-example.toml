@@ -1,0 +1,18 @@
+# Example on-chain fork test configuration
+
+[fork_test]
+enabled = true
+block_range_start = 1000000
+block_range_end = 1001000
+
+[mev_scenario]
+type = "PoolSnipe" # PoolSnipe, SandwichProtection, Arbitrage
+
+[gas_oracle]
+base_gas_price_gwei = 20.0
+spike_multiplier = 5.0
+spike_duration_secs = 300
+
+[reorg_test]
+reorg_blocks = 2
+reorg_probability = 0.05

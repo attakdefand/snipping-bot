@@ -1,30 +1,39 @@
-# Build script for all WASM components in the project
-# This script builds the WASM dashboard and prepares it for deployment
+# Build script for the WASM dashboard and copy files to the service directory
+# This script compiles the Rust code to WebAssembly and copies the output to the svc-wasm-dashboard assets
 
-Write-Host "Building all WASM components..."
+Write-Host "Building WASM dashboard and copying files..." -ForegroundColor Green
 
 # Navigate to the WASM dashboard directory
-Set-Location -Path "crates\sniper-wasm-dashboard"
+Set-Location "$PSScriptRoot\crates\sniper-wasm-dashboard"
 
 # Check if wasm-pack is installed
-if (!(Get-Command wasm-pack -ErrorAction SilentlyContinue)) {
+try {
+    $wasmPackVersion = wasm-pack --version
+    Write-Host "Found wasm-pack: $wasmPackVersion"
+} catch {
     Write-Host "Installing wasm-pack..."
-    curl https://rustwasm.github.io/wasm-pack/installer/init.ps1 -UseBasicParsing -o init.ps1
-    .\init.ps1
-    Remove-Item init.ps1
+    # Download and install wasm-pack
+    curl -L https://github.com/rustwasm/wasm-pack/releases/download/v0.12.1/wasm-pack-init.exe -o wasm-pack-init.exe
+    .\wasm-pack-init.exe -y
+    Remove-Item .\wasm-pack-init.exe
 }
 
 # Build the WASM package
-Write-Host "Building WASM dashboard..."
+Write-Host "Compiling Rust to WebAssembly..."
 wasm-pack build --target web --out-dir pkg
 
-Write-Host "WASM components built successfully!"
+# Copy the built files to the svc-wasm-dashboard assets directory
+Write-Host "Copying files to svc-wasm-dashboard assets directory..."
+$sourceDir = "$PSScriptRoot\crates\sniper-wasm-dashboard\pkg"
+$destDir = "$PSScriptRoot\crates\svc-wasm-dashboard\assets\static"
 
-# Return to project root
-Set-Location -Path "..\.."
+# Create destination directory if it doesn't exist
+if (!(Test-Path $destDir)) {
+    New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+}
 
-Write-Host "To run the WASM dashboard service:"
-Write-Host "  cargo run --bin svc-wasm-dashboard"
-Write-Host ""
-Write-Host "Or to run all services:"
-Write-Host "  .\scripts\run-all-services.ps1"
+# Copy all files from pkg to assets/static
+Copy-Item -Path "$sourceDir\*" -Destination $destDir -Force
+
+Write-Host "WASM dashboard built and files copied successfully!" -ForegroundColor Green
+Write-Host "Files are now available in: $destDir"

@@ -1,0 +1,17 @@
+# Example paper trade backtest configuration
+
+[paper_trade]
+enabled = true
+time_warp_factor = 5.0 # 5x speed
+shadow_mode = true
+
+[exec]
+model = "AMMExec"
+latency_ms = { send = 12, venue = 18, ack = 6 }
+slippage = { model = "impact", k = 0.85 }
+fees = { taker_bps = 7.0, maker_bps = 2.0, gas_usd = 0.12 }
+
+[risk]
+max_leverage = 2.0
+max_daily_loss_bps = 150
+max_pos_notional_usd = 50000

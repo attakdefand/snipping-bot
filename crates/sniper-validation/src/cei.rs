@@ -38,7 +38,15 @@ impl CeiValidator {
     pub fn new() -> Self {
         Self
     }
+}
 
+impl Default for CeiValidator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CeiValidator {
     /// Validate that a contract follows the CEI pattern
     pub fn validate_contract(&self, _contract_code: &str) -> Result<CeiValidationResult> {
         // In a real implementation, this would analyze the contract code
@@ -131,7 +139,6 @@ mod tests {
     #[test]
     fn test_cei_validator_creation() {
         let _validator = CeiValidator::new();
-        assert!(true, "CEI validator created successfully");
     }
 
     #[test]

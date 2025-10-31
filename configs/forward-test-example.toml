@@ -1,0 +1,17 @@
+# Example forward testing configuration
+
+[forward_test]
+enabled = true
+duration_days = 30
+capital_allocation = 0.1 # 10% of total capital
+
+[risk_limits]
+max_drawdown_pct = 5.0
+max_position_size_pct = 2.0
+max_daily_loss_pct = 1.0
+
+[kill_switch]
+enabled = true
+drawdown_threshold_pct = 3.0
+spread_threshold_pct = 5.0
+liquidity_threshold_pct = 10.0
