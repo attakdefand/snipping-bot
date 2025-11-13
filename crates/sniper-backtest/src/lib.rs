@@ -1,17 +1,17 @@
 //! Backtesting module for the sniper bot.
-//! 
+//!
 //! This module provides functionality for comprehensive backtesting with historical data
 //! to evaluate strategy performance before live deployment.
 
+use csv::ReaderBuilder;
+use serde::{Deserialize, Serialize};
 use sniper_core::types::{Signal, TradePlan};
 use sniper_ml::MlModel;
-use sniper_risk;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tokio::time::{Duration, sleep};
 use std::fs::File;
 use std::io::BufReader;
-use csv::ReaderBuilder;
+
+use tokio::time::sleep;
 
 /// Configuration for backtesting
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,7 +81,6 @@ pub struct ProcessedTransaction {
     pub processed_at_ms: u64,
 }
 
-
 /// CSV format for historical price data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HistoricalPriceRecord {
@@ -97,7 +96,7 @@ pub struct HistoricalPriceRecord {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SlippageModel {
     pub model_type: SlippageModelType,
-    pub k_coefficient: f64, // Kyle's lambda for impact model
+    pub k_coefficient: f64,    // Kyle's lambda for impact model
     pub max_slippage_pct: f64, // Maximum allowed slippage
 }
 
@@ -675,29 +674,29 @@ impl SimClock {
             paused: false,
         }
     }
-    
+
     /// Advance the clock by a given amount of real time
     pub fn advance(&mut self, real_time_delta_ms: u64) {
         if !self.paused {
             self.current_time_ms += (real_time_delta_ms as f64 * self.time_warp_factor) as u64;
         }
     }
-    
+
     /// Set the time warp factor for accelerated replay
     pub fn set_time_warp(&mut self, factor: f64) {
         self.time_warp_factor = factor;
     }
-    
+
     /// Pause the clock
     pub fn pause(&mut self) {
         self.paused = true;
     }
-    
+
     /// Resume the clock
     pub fn resume(&mut self) {
         self.paused = false;
     }
-    
+
     /// Get the current time
     pub fn now(&self) -> u64 {
         self.current_time_ms
@@ -942,19 +941,19 @@ impl BacktestEngine {
             market_regimes: Vec::new(),
         }
     }
-    
+
     /// Apply regime-specific parameters to backtest configuration
     pub fn apply_regime_parameters(&mut self, regime: &MarketRegime) {
         // Adjust fees based on regime
         self.config.trading_fee_pct *= regime.parameters.fee_multiplier;
-        
+
         // Adjust slippage model based on regime
         self.slippage_model.k_coefficient *= regime.parameters.volatility_multiplier;
-        
+
         // Log the regime change
         tracing::info!("Applied regime '{}' parameters", regime.id);
     }
-    
+
     /// Run forward test simulation
     pub async fn run_forward_test(
         &self,
@@ -974,26 +973,30 @@ impl BacktestEngine {
                 kill_switch_activations: vec![],
             };
         }
-        
-        tracing::info!("Starting forward test simulation for {} seconds with {}% capital allocation",
-                      config.duration_secs, config.capital_allocation * 100.0);
-        
+
+        tracing::info!(
+            "Starting forward test simulation for {} seconds with {}% capital allocation",
+            config.duration_secs,
+            config.capital_allocation * 100.0
+        );
+
         // Adjust initial capital based on allocation
         let mut adjusted_config = self.config.clone();
         adjusted_config.initial_capital *= config.capital_allocation;
-        
+
         // Create a new engine with adjusted configuration
-        let mut test_engine = BacktestEngine::new(adjusted_config);
-        
+        let test_engine = BacktestEngine::new(adjusted_config);
+
         // Run the backtest (in a real forward test, this would use live data)
         let performance = test_engine.run_backtest(signals, ml_model).await;
-        
+
         // Calculate risk metrics
         let risk_metrics = self.calculate_risk_metrics(&performance);
-        
+
         // Check for kill switch activations
-        let kill_switch_activations = self.check_kill_switch_activations(&performance, &config.kill_switch);
-        
+        let kill_switch_activations =
+            self.check_kill_switch_activations(&performance, &config.kill_switch);
+
         ForwardTestResults {
             config,
             performance,
@@ -1001,7 +1004,7 @@ impl BacktestEngine {
             kill_switch_activations,
         }
     }
-    
+
     /// Run fork test simulation for on-chain testing
     pub async fn run_fork_test(
         &self,
@@ -1025,35 +1028,39 @@ impl BacktestEngine {
                 },
             };
         }
-        
-        tracing::info!("Starting fork test simulation from block {:?}", config.fork_block);
-        
+
+        tracing::info!(
+            "Starting fork test simulation from block {:?}",
+            config.fork_block
+        );
+
         // Adjust configuration based on fork test settings
         let mut fork_config = self.config.clone();
-        
+
         // Apply gas price model
         if config.gas_model.spike_multiplier > 1.0 && config.gas_model.spike_probability > 0.0 {
             // Increase trading fees to simulate gas spike
-            fork_config.trading_fee_pct *= config.gas_model.spike_multiplier * config.gas_model.spike_probability;
+            fork_config.trading_fee_pct *=
+                config.gas_model.spike_multiplier * config.gas_model.spike_probability;
         }
-        
+
         // Create a new engine with fork configuration
         let mut fork_engine = BacktestEngine::new(fork_config);
-        
+
         // Apply MEV scenario if specified
         if let Some(mev_scenario) = &config.mev_scenario {
             self.apply_mev_scenario(&mut fork_engine, mev_scenario);
         }
-        
+
         // Run the backtest with fork configuration
         let performance = fork_engine.run_backtest(signals, ml_model).await;
-        
+
         // Calculate MEV impact metrics
         let mev_impact = self.calculate_mev_impact(&config);
-        
+
         // Calculate reorg statistics
         let reorg_stats = self.calculate_reorg_stats(&config);
-        
+
         ForkTestResults {
             config,
             performance,
@@ -1061,45 +1068,45 @@ impl BacktestEngine {
             reorg_stats,
         }
     }
-    
+
     /// Apply MEV scenario to the fork engine
     fn apply_mev_scenario(&self, engine: &mut BacktestEngine, scenario: &MevScenario) {
         match scenario {
             MevScenario::PoolSnipe { amount_in, .. } => {
                 // Increase slippage to simulate pool snipe impact
                 engine.config.slippage_pct *= 1.0 + (amount_in / 1000.0).min(0.1);
-            },
+            }
             MevScenario::Sandwich { .. } => {
                 // Increase slippage and fees to simulate sandwich attack
                 engine.config.slippage_pct *= 1.5;
                 engine.config.trading_fee_pct *= 1.2;
-            },
+            }
             MevScenario::Frontrun { .. } => {
                 // Increase latency and slippage to simulate frontrun
                 engine.config.slippage_pct *= 1.3;
-            },
+            }
         }
     }
-    
+
     /// Calculate MEV impact metrics
     fn calculate_mev_impact(&self, config: &ForkTestConfig) -> MevImpactMetrics {
         let (profit_lost, additional_slippage) = match &config.mev_scenario {
             Some(MevScenario::PoolSnipe { amount_in, .. }) => {
                 let impact = (amount_in / 1000.0).min(0.1);
                 (impact * 1000.0, impact * 0.5)
-            },
+            }
             Some(MevScenario::Sandwich { .. }) => (500.0, 0.02),
             Some(MevScenario::Frontrun { .. }) => (300.0, 0.01),
             None => (0.0, 0.0),
         };
-        
+
         MevImpactMetrics {
             profit_lost,
             additional_slippage,
             failed_transactions: 0, // Would be calculated in a real implementation
         }
     }
-    
+
     /// Calculate reorg statistics
     fn calculate_reorg_stats(&self, config: &ForkTestConfig) -> ReorgStatistics {
         if config.reorg_settings.enabled {
@@ -1116,151 +1123,172 @@ impl BacktestEngine {
             }
         }
     }
-    
+
     /// Calculate risk metrics from backtest results
     fn calculate_risk_metrics(&self, results: &BacktestResults) -> RiskMetrics {
         // Extract position sizes from trades
-        let position_sizes: Vec<f64> = results.individual_trades
+        let position_sizes: Vec<f64> = results
+            .individual_trades
             .iter()
             .map(|trade| trade.position_size_pct)
             .collect();
-        
+
         // Calculate daily losses (simplified - assume evenly distributed)
         let mut daily_losses = Vec::new();
         if results.total_trades > 0 {
             let avg_loss_per_trade = if results.losing_trades > 0 {
-                (results.total_profit_loss - (results.total_fees_paid + results.total_slippage_loss)) / results.losing_trades as f64
+                (results.total_profit_loss
+                    - (results.total_fees_paid + results.total_slippage_loss))
+                    / results.losing_trades as f64
             } else {
                 0.0
             };
-            
+
             // Assume 10 trades per day for demonstration
             let trades_per_day = 10;
-            let days = (results.total_trades + trades_per_day - 1) / trades_per_day; // Ceiling division
-            
+            let days = results.total_trades.div_ceil(trades_per_day);
+
             for _ in 0..days {
                 let daily_loss = avg_loss_per_trade * trades_per_day as f64;
                 daily_losses.push(daily_loss);
             }
         }
-        
+
         RiskMetrics {
             actual_drawdown_pct: results.max_drawdown * 100.0,
             position_sizes,
             daily_losses,
         }
     }
-    
+
     /// Check for kill switch activations based on results and configuration
-    fn check_kill_switch_activations(&self, results: &BacktestResults, config: &KillSwitchConfig) -> Vec<KillSwitchActivation> {
+    fn check_kill_switch_activations(
+        &self,
+        results: &BacktestResults,
+        config: &KillSwitchConfig,
+    ) -> Vec<KillSwitchActivation> {
         let mut activations = Vec::new();
-        
+
         if !config.enabled {
             return activations;
         }
-        
+
         // Check drawdown threshold
         if results.max_drawdown * 100.0 > config.drawdown_threshold_pct {
             activations.push(KillSwitchActivation {
                 timestamp: self.clock.now(),
                 reason: KillSwitchReason::DrawdownExceeded,
-                details: format!("Drawdown {}% exceeded threshold {}%", 
-                               results.max_drawdown * 100.0, 
-                               config.drawdown_threshold_pct),
+                details: format!(
+                    "Drawdown {}% exceeded threshold {}%",
+                    results.max_drawdown * 100.0,
+                    config.drawdown_threshold_pct
+                ),
             });
         }
-        
+
         // In a real implementation, we would also check for:
         // - Anomalous spread conditions
         // - Liquidity vacuum conditions
         // - Manual activations
-        
+
         activations
     }
-    
+
     /// Get the current configuration
     pub fn config(&self) -> &BacktestConfig {
         &self.config
     }
-    
+
     /// Set the slippage model
     pub fn set_slippage_model(&mut self, model: SlippageModel) {
         self.slippage_model = model;
     }
-    
+
     /// Add historical data for a token
     pub fn add_historical_data(&mut self, token_address: String, data: Vec<MarketDataPoint>) {
         self.historical_data.insert(token_address, data);
     }
-    
+
     /// Add order book data for a token
     pub fn add_order_book_data(&mut self, token_address: String, data: Vec<OrderBookData>) {
         self.order_book_data.insert(token_address, data);
     }
-    
+
     /// Add OHLCV data for a token
     pub fn add_ohlcv_data(&mut self, token_address: String, data: Vec<HistoricalPriceRecord>) {
         self.ohlcv_data.insert(token_address, data);
     }
-    
+
     /// Load historical data from CSV file
-    pub fn load_historical_data_from_csv(&mut self, token_address: &str, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn load_historical_data_from_csv(
+        &mut self,
+        token_address: &str,
+        file_path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let file = File::open(file_path)?;
         let reader = BufReader::new(file);
         let mut csv_reader = ReaderBuilder::new().has_headers(true).from_reader(reader);
-        
+
         let mut data = Vec::new();
         for result in csv_reader.deserialize() {
             let record: HistoricalPriceRecord = result?;
             data.push(record);
         }
-        
+
         self.ohlcv_data.insert(token_address.to_string(), data);
         Ok(())
     }
-    
+
     /// Add tick data for a token
     pub fn add_tick_data(&mut self, token_address: String, data: Vec<TickData>) {
         self.tick_data.insert(token_address, data);
     }
-    
+
     /// Add bar data for a token
     pub fn add_bar_data(&mut self, token_address: String, data: Vec<BarData>) {
         self.bar_data.insert(token_address, data);
     }
-    
+
     /// Load tick data from CSV file
-    pub fn load_tick_data_from_csv(&mut self, token_address: &str, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn load_tick_data_from_csv(
+        &mut self,
+        token_address: &str,
+        file_path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let file = File::open(file_path)?;
         let reader = BufReader::new(file);
         let mut csv_reader = ReaderBuilder::new().has_headers(true).from_reader(reader);
-        
+
         let mut data = Vec::new();
         for result in csv_reader.deserialize() {
             let record: TickData = result?;
             data.push(record);
         }
-        
+
         self.tick_data.insert(token_address.to_string(), data);
         Ok(())
     }
-    
+
     /// Load bar data from CSV file
-    pub fn load_bar_data_from_csv(&mut self, token_address: &str, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn load_bar_data_from_csv(
+        &mut self,
+        token_address: &str,
+        file_path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let file = File::open(file_path)?;
         let reader = BufReader::new(file);
         let mut csv_reader = ReaderBuilder::new().has_headers(true).from_reader(reader);
-        
+
         let mut data = Vec::new();
         for result in csv_reader.deserialize() {
             let record: BarData = result?;
             data.push(record);
         }
-        
+
         self.bar_data.insert(token_address.to_string(), data);
         Ok(())
     }
-    
+
     /// Get market data for a specific time and token
     pub fn get_market_data(&self, token_address: &str, timestamp: u64) -> Option<MarketDataPoint> {
         if let Some(data) = self.historical_data.get(token_address) {
@@ -1273,9 +1301,14 @@ impl BacktestEngine {
             None
         }
     }
-    
+
     /// Get tick data for a specific time range and token
-    pub fn get_tick_data_range(&self, token_address: &str, start_time: u64, end_time: u64) -> Vec<TickData> {
+    pub fn get_tick_data_range(
+        &self,
+        token_address: &str,
+        start_time: u64,
+        end_time: u64,
+    ) -> Vec<TickData> {
         if let Some(data) = self.tick_data.get(token_address) {
             data.iter()
                 .filter(|d| d.timestamp >= start_time && d.timestamp <= end_time)
@@ -1285,9 +1318,14 @@ impl BacktestEngine {
             Vec::new()
         }
     }
-    
+
     /// Get bar data for a specific time range and token
-    pub fn get_bar_data_range(&self, token_address: &str, start_time: u64, end_time: u64) -> Vec<BarData> {
+    pub fn get_bar_data_range(
+        &self,
+        token_address: &str,
+        start_time: u64,
+        end_time: u64,
+    ) -> Vec<BarData> {
         if let Some(data) = self.bar_data.get(token_address) {
             data.iter()
                 .filter(|d| d.timestamp >= start_time && d.timestamp <= end_time)
@@ -1297,30 +1335,34 @@ impl BacktestEngine {
             Vec::new()
         }
     }
-    
+
     /// Get current market regime based on timestamp
     pub fn get_current_regime(&self, timestamp: u64) -> Option<&MarketRegime> {
-        self.market_regimes.iter()
-            .find(|regime| {
-                regime.time_periods.iter().any(|(start, end)| {
-                    timestamp as i64 >= *start && timestamp as i64 <= *end
-                })
-            })
+        self.market_regimes.iter().find(|regime| {
+            regime
+                .time_periods
+                .iter()
+                .any(|(start, end)| timestamp as i64 >= *start && timestamp as i64 <= *end)
+        })
     }
-    
+
     /// Add market regime
     pub fn add_market_regime(&mut self, regime: MarketRegime) {
         self.market_regimes.push(regime);
     }
-    
+
     /// Run a backtest simulation
     pub async fn run_backtest(&self, signals: Vec<Signal>, ml_model: &MlModel) -> BacktestResults {
         if !self.config.enabled {
             return self.empty_results();
         }
-        
-        tracing::info!("Starting backtest from {} to {}", self.config.start_time, self.config.end_time);
-        
+
+        tracing::info!(
+            "Starting backtest from {} to {}",
+            self.config.start_time,
+            self.config.end_time
+        );
+
         let mut capital = self.config.initial_capital;
         let mut trades: Vec<TradeResult> = Vec::new();
         let mut peak_capital = capital;
@@ -1329,25 +1371,27 @@ impl BacktestEngine {
         let mut max_consecutive_losses = 0;
         let mut current_consecutive_wins = 0;
         let mut current_consecutive_losses = 0;
-        
+
         for signal in signals {
             // Skip signals outside our backtest time range
-            if (signal.seen_at_ms as i64) < self.config.start_time || (signal.seen_at_ms as i64) > self.config.end_time {
+            if (signal.seen_at_ms as i64) < self.config.start_time
+                || (signal.seen_at_ms as i64) > self.config.end_time
+            {
                 continue;
             }
-            
+
             // Process signal with ML model
             if let Some(plan) = ml_model.process_signal(&signal).await {
                 // Simulate risk evaluation
                 let decision = sniper_risk::evaluate_trade(&plan);
-                
+
                 if decision.allow {
                     // Simulate trade execution
                     if let Some(result) = self.simulate_trade(&plan, &signal).await {
                         let profit_loss = result.profit_loss;
                         capital += profit_loss - result.fees_paid - result.slippage_loss;
                         trades.push(result);
-                        
+
                         // Update consecutive win/loss counters
                         if profit_loss > 0.0 {
                             current_consecutive_wins += 1;
@@ -1362,12 +1406,12 @@ impl BacktestEngine {
                                 max_consecutive_losses = current_consecutive_losses;
                             }
                         }
-                        
+
                         // Update drawdown metrics
                         if capital > peak_capital {
                             peak_capital = capital;
                         }
-                        
+
                         let drawdown = (peak_capital - capital) / peak_capital;
                         if drawdown > max_drawdown {
                             max_drawdown = drawdown;
@@ -1375,11 +1419,11 @@ impl BacktestEngine {
                     }
                 }
             }
-            
+
             // Small delay to simulate processing time
-            sleep(Duration::from_millis(1)).await;
+            sleep(std::time::Duration::from_millis(1)).await;
         }
-        
+
         // Calculate final metrics
         let total_trades = trades.len();
         let winning_trades = trades.iter().filter(|t| t.profit_loss > 0.0).count();
@@ -1397,14 +1441,18 @@ impl BacktestEngine {
         } else {
             0.0
         };
-        
+
         // Calculate Sharpe ratio (assuming risk-free rate of 0)
         let returns: Vec<f64> = trades.iter().map(|t| t.profit_loss_pct).collect();
         let sharpe_ratio = if returns.is_empty() {
             0.0
         } else {
             let mean_return: f64 = returns.iter().sum::<f64>() / returns.len() as f64;
-            let variance: f64 = returns.iter().map(|r| (r - mean_return).powi(2)).sum::<f64>() / returns.len() as f64;
+            let variance: f64 = returns
+                .iter()
+                .map(|r| (r - mean_return).powi(2))
+                .sum::<f64>()
+                / returns.len() as f64;
             let std_dev = variance.sqrt();
             if std_dev > 0.0 {
                 mean_return / std_dev
@@ -1412,15 +1460,17 @@ impl BacktestEngine {
                 0.0
             }
         };
-        
+
         // Calculate Sortino ratio (considering only downside deviation)
         let sortino_ratio = if returns.is_empty() {
             0.0
         } else {
             let mean_return: f64 = returns.iter().sum::<f64>() / returns.len() as f64;
-            let downside_returns: Vec<f64> = returns.iter().filter(|&&r| r < 0.0).cloned().collect();
+            let downside_returns: Vec<f64> =
+                returns.iter().filter(|&&r| r < 0.0).cloned().collect();
             let downside_variance: f64 = if !downside_returns.is_empty() {
-                downside_returns.iter().map(|r| r.powi(2)).sum::<f64>() / downside_returns.len() as f64
+                downside_returns.iter().map(|r| r.powi(2)).sum::<f64>()
+                    / downside_returns.len() as f64
             } else {
                 0.0
             };
@@ -1431,14 +1481,14 @@ impl BacktestEngine {
                 0.0
             }
         };
-        
+
         // Calculate Calmar ratio
         let calmar_ratio = if max_drawdown > 0.0 {
             (total_profit_loss / self.config.initial_capital) / max_drawdown
         } else {
             0.0
         };
-        
+
         BacktestResults {
             config: self.config.clone(),
             total_trades,
@@ -1458,7 +1508,7 @@ impl BacktestEngine {
             individual_trades: trades,
         }
     }
-    
+
     /// Simulate a trade execution with enhanced models
     async fn simulate_trade(&self, plan: &TradePlan, signal: &Signal) -> Option<TradeResult> {
         // In a real implementation, this would:
@@ -1466,14 +1516,14 @@ impl BacktestEngine {
         // 2. Simulate slippage and execution using order book data if available
         // 3. Apply trading fees
         // 4. Calculate profit/loss
-        
+
         // Placeholder implementation with simulated results
         let entry_time = signal.seen_at_ms;
         let exit_time = entry_time + 3600000; // 1 hour later
         let entry_price = 100.0; // Simulated entry price
         let exit_price = 110.0; // Simulated exit price (10% gain)
         let amount_in = plan.amount_in as f64 / 1e18; // Convert from wei to ETH
-        
+
         // Apply execution model based on configuration
         let (actual_exit_price, execution_details) = match self.config.execution_model {
             ExecutionModelType::Simple => {
@@ -1486,38 +1536,35 @@ impl BacktestEngine {
                     latency_ms: 10,
                 };
                 (price, details)
-            },
+            }
             ExecutionModelType::OrderBook => {
                 // Use order book data for more realistic execution
                 let (price, details) = self.simulate_order_book_execution(
                     signal.token0.as_deref().unwrap_or(""),
                     exit_price,
-                    amount_in
+                    amount_in,
                 );
                 (price, details)
-            },
+            }
             ExecutionModelType::Impact => {
                 // Use market impact model
-                let (price, details) = self.simulate_impact_execution(
-                    exit_price,
-                    amount_in
-                );
+                let (price, details) = self.simulate_impact_execution(exit_price, amount_in);
                 (price, details)
-            },
+            }
         };
-        
+
         let amount_out = amount_in * (actual_exit_price / entry_price);
-        
+
         let profit_loss = (actual_exit_price - entry_price) * amount_in;
         let profit_loss_pct = (actual_exit_price / entry_price - 1.0) * 100.0;
         let fees_paid = amount_in * self.config.trading_fee_pct;
         let slippage_loss = (exit_price - actual_exit_price) * amount_in;
         let position_size_pct = amount_in / self.config.initial_capital * 100.0;
-        
+
         Some(TradeResult {
             plan_id: plan.idem_key.clone(),
-            entry_time: entry_time as i64,
-            exit_time: exit_time as i64,
+            entry_time,
+            exit_time,
             entry_price,
             exit_price: actual_exit_price,
             amount_in,
@@ -1530,59 +1577,69 @@ impl BacktestEngine {
             execution_details,
         })
     }
-    
+
     /// Simulate order book execution
-    fn simulate_order_book_execution(&self, token_address: &str, price: f64, amount: f64) -> (f64, ExecutionDetails) {
+    fn simulate_order_book_execution(
+        &self,
+        token_address: &str,
+        price: f64,
+        amount: f64,
+    ) -> (f64, ExecutionDetails) {
         // Check if we have order book data for this token
         if let Some(order_book_data) = self.order_book_data.get(token_address) {
             if !order_book_data.is_empty() {
                 // Get the most recent order book data
                 let latest_data = &order_book_data[order_book_data.len() - 1];
-                
+
                 // Walk the order book to simulate execution
                 let mut remaining_amount = amount;
                 let mut total_value = 0.0;
                 let mut partial_fills = Vec::new();
                 let mut queue_position = 0;
-                
+
                 // Simulate walking the ask side (for buying)
-                for (i, (ask_price, ask_volume)) in latest_data.ask_prices.iter().zip(&latest_data.ask_volumes).enumerate() {
+                for (i, (ask_price, ask_volume)) in latest_data
+                    .ask_prices
+                    .iter()
+                    .zip(&latest_data.ask_volumes)
+                    .enumerate()
+                {
                     if remaining_amount <= 0.0 {
                         break;
                     }
-                    
+
                     let fill_amount = remaining_amount.min(*ask_volume);
                     let fill_value = fill_amount * ask_price;
-                    
+
                     partial_fills.push(PartialFill {
                         price: *ask_price,
                         amount: fill_amount,
                         timestamp: latest_data.timestamp,
                     });
-                    
+
                     total_value += fill_value;
                     remaining_amount -= fill_amount;
                     queue_position = i;
                 }
-                
+
                 // Calculate average execution price
                 let avg_price = if amount > 0.0 {
                     total_value / amount
                 } else {
                     price
                 };
-                
+
                 let details = ExecutionDetails {
                     model_used: "OrderBook".to_string(),
                     queue_position: Some(queue_position),
                     partial_fills,
                     latency_ms: 50, // Higher latency for order book simulation
                 };
-                
+
                 return (avg_price, details);
             }
         }
-        
+
         // Fallback to simple slippage if no order book data
         let slippage_multiplier = 1.0 - self.config.slippage_pct;
         let price_with_slippage = price * slippage_multiplier;
@@ -1592,10 +1649,10 @@ impl BacktestEngine {
             partial_fills: vec![],
             latency_ms: 20,
         };
-        
+
         (price_with_slippage, details)
     }
-    
+
     /// Simulate market impact execution
     fn simulate_impact_execution(&self, price: f64, amount: f64) -> (f64, ExecutionDetails) {
         // Calculate price impact using Kyle's lambda model
@@ -1603,13 +1660,13 @@ impl BacktestEngine {
         let k = self.slippage_model.k_coefficient;
         let avg_volume = 1000.0; // Placeholder - would come from historical data
         let impact = k * (amount / avg_volume).sqrt();
-        
+
         // Limit impact to maximum allowed slippage
         let capped_impact = impact.min(self.slippage_model.max_slippage_pct / 100.0);
-        
+
         // For buying, price increases (negative impact on profit)
         let impacted_price = price * (1.0 + capped_impact);
-        
+
         let details = ExecutionDetails {
             model_used: "Impact".to_string(),
             queue_position: None,
@@ -1620,21 +1677,25 @@ impl BacktestEngine {
             }],
             latency_ms: 30,
         };
-        
+
         (impacted_price, details)
     }
-    
+
     /// Calculate slippage based on order book depth
-    fn calculate_slippage_from_order_book(&self, order_book: &[OrderBookData], _amount: f64) -> f64 {
+    fn calculate_slippage_from_order_book(
+        &self,
+        order_book: &[OrderBookData],
+        _amount: f64,
+    ) -> f64 {
         // This is a simplified model - in practice, you would walk the order book
         // to determine the actual price impact
         if order_book.is_empty() {
             return 1.0 - self.config.slippage_pct;
         }
-        
+
         // Get the most recent order book data
         let latest_data = &order_book[order_book.len() - 1];
-        
+
         // Simple model: assume slippage is inversely proportional to liquidity
         let liquidity = latest_data.liquidity;
         if liquidity > 0.0 {
@@ -1645,7 +1706,7 @@ impl BacktestEngine {
             1.0 - self.config.slippage_pct
         }
     }
-    
+
     /// Run walk-forward optimization
     pub async fn run_walk_forward_optimization(
         &self,
@@ -1662,49 +1723,63 @@ impl BacktestEngine {
 
         let mut windows = Vec::new();
         let mut all_trades = Vec::new();
-        
+
         // Determine the overall time range
-        let min_time = signals.iter().map(|s| s.seen_at_ms as i64).min().unwrap_or(self.config.start_time);
-        let max_time = signals.iter().map(|s| s.seen_at_ms as i64).max().unwrap_or(self.config.end_time);
-        
+        let min_time = signals
+            .iter()
+            .map(|s| s.seen_at_ms as i64)
+            .min()
+            .unwrap_or(self.config.start_time);
+        let max_time = signals
+            .iter()
+            .map(|s| s.seen_at_ms as i64)
+            .max()
+            .unwrap_or(self.config.end_time);
+
         let mut current_start = min_time.max(self.config.start_time);
-        
-        while current_start + config.train_window_secs + config.test_window_secs <= max_time.min(self.config.end_time) {
+
+        while current_start + config.train_window_secs + config.test_window_secs
+            <= max_time.min(self.config.end_time)
+        {
             let train_end = current_start + config.train_window_secs;
             let test_end = train_end + config.test_window_secs;
-            
+
             // Split signals into train and test sets
-            let train_signals: Vec<Signal> = signals.iter()
+            let train_signals: Vec<Signal> = signals
+                .iter()
                 .filter(|s| {
                     let time = s.seen_at_ms as i64;
                     time >= current_start && time < train_end
                 })
                 .cloned()
                 .collect();
-                
-            let test_signals: Vec<Signal> = signals.iter()
+
+            let test_signals: Vec<Signal> = signals
+                .iter()
                 .filter(|s| {
                     let time = s.seen_at_ms as i64;
                     time >= train_end && time < test_end
                 })
                 .cloned()
                 .collect();
-            
+
             // Skip if not enough signals
-            if train_signals.len() < config.min_train_trades || test_signals.len() < config.min_test_trades {
+            if train_signals.len() < config.min_train_trades
+                || test_signals.len() < config.min_test_trades
+            {
                 current_start += config.step_secs;
                 continue;
             }
-            
+
             // Run backtest on training data (this would be where parameter optimization happens)
             let train_results = self.run_backtest(train_signals, ml_model).await;
-            
+
             // Run backtest on test data with same parameters
             let test_results = self.run_backtest(test_signals, ml_model).await;
-            
+
             // Collect all trades for overall performance calculation
             all_trades.extend(test_results.individual_trades.iter().cloned());
-            
+
             // Store window results
             windows.push(WalkForwardWindowResults {
                 window_start: current_start,
@@ -1713,26 +1788,26 @@ impl BacktestEngine {
                 test_results,
                 parameters: serde_json::json!({}), // In a real implementation, this would contain optimized parameters
             });
-            
+
             current_start += config.step_secs;
         }
-        
+
         // Calculate overall performance across all test windows
         let overall_performance = self.calculate_overall_performance(all_trades);
-        
+
         WalkForwardResults {
             config,
             windows,
             overall_performance,
         }
     }
-    
+
     /// Calculate overall performance from individual trades
     fn calculate_overall_performance(&self, trades: Vec<TradeResult>) -> BacktestResults {
         if trades.is_empty() {
             return self.empty_results();
         }
-        
+
         let total_trades = trades.len();
         let winning_trades = trades.iter().filter(|t| t.profit_loss > 0.0).count();
         let losing_trades = total_trades - winning_trades;
@@ -1749,12 +1824,12 @@ impl BacktestEngine {
         } else {
             0.0
         };
-        
+
         // Calculate drawdown
         let mut peak_capital = self.config.initial_capital;
         let mut max_drawdown = 0.0;
         let mut current_capital = self.config.initial_capital;
-        
+
         for trade in &trades {
             current_capital += trade.profit_loss - trade.fees_paid - trade.slippage_loss;
             if current_capital > peak_capital {
@@ -1765,16 +1840,20 @@ impl BacktestEngine {
                 max_drawdown = drawdown;
             }
         }
-        
+
         // Calculate returns for Sharpe/Sortino ratios
         let returns: Vec<f64> = trades.iter().map(|t| t.profit_loss_pct).collect();
-        
+
         // Calculate Sharpe ratio (assuming risk-free rate of 0)
         let sharpe_ratio = if returns.is_empty() {
             0.0
         } else {
             let mean_return: f64 = returns.iter().sum::<f64>() / returns.len() as f64;
-            let variance: f64 = returns.iter().map(|r| (r - mean_return).powi(2)).sum::<f64>() / returns.len() as f64;
+            let variance: f64 = returns
+                .iter()
+                .map(|r| (r - mean_return).powi(2))
+                .sum::<f64>()
+                / returns.len() as f64;
             let std_dev = variance.sqrt();
             if std_dev > 0.0 {
                 mean_return / std_dev
@@ -1782,15 +1861,17 @@ impl BacktestEngine {
                 0.0
             }
         };
-        
+
         // Calculate Sortino ratio (considering only downside deviation)
         let sortino_ratio = if returns.is_empty() {
             0.0
         } else {
             let mean_return: f64 = returns.iter().sum::<f64>() / returns.len() as f64;
-            let downside_returns: Vec<f64> = returns.iter().filter(|&&r| r < 0.0).cloned().collect();
+            let downside_returns: Vec<f64> =
+                returns.iter().filter(|&&r| r < 0.0).cloned().collect();
             let downside_variance: f64 = if !downside_returns.is_empty() {
-                downside_returns.iter().map(|r| r.powi(2)).sum::<f64>() / downside_returns.len() as f64
+                downside_returns.iter().map(|r| r.powi(2)).sum::<f64>()
+                    / downside_returns.len() as f64
             } else {
                 0.0
             };
@@ -1801,17 +1882,18 @@ impl BacktestEngine {
                 0.0
             }
         };
-        
+
         // Calculate Calmar ratio
         let calmar_ratio = if max_drawdown > 0.0 {
             (total_profit_loss / self.config.initial_capital) / max_drawdown
         } else {
             0.0
         };
-        
+
         // Count consecutive wins/losses
-        let (max_consecutive_wins, max_consecutive_losses) = self.calculate_consecutive_trades(&trades);
-        
+        let (max_consecutive_wins, max_consecutive_losses) =
+            self.calculate_consecutive_trades(&trades);
+
         BacktestResults {
             config: self.config.clone(),
             total_trades,
@@ -1831,14 +1913,14 @@ impl BacktestEngine {
             individual_trades: trades,
         }
     }
-    
+
     /// Calculate maximum consecutive wins and losses
     fn calculate_consecutive_trades(&self, trades: &[TradeResult]) -> (usize, usize) {
         let mut max_consecutive_wins = 0;
         let mut max_consecutive_losses = 0;
         let mut current_consecutive_wins = 0;
         let mut current_consecutive_losses = 0;
-        
+
         for trade in trades {
             if trade.profit_loss > 0.0 {
                 current_consecutive_wins += 1;
@@ -1854,10 +1936,10 @@ impl BacktestEngine {
                 }
             }
         }
-        
+
         (max_consecutive_wins, max_consecutive_losses)
     }
-    
+
     /// Run portfolio backtest across multiple assets
     pub async fn run_portfolio_backtest(
         &self,
@@ -1865,15 +1947,18 @@ impl BacktestEngine {
         ml_model: &MlModel,
         portfolio_config: PortfolioBacktestConfig,
     ) -> BacktestResults {
-        tracing::info!("Starting portfolio backtest for {} assets", portfolio_config.assets.len());
-        
+        tracing::info!(
+            "Starting portfolio backtest for {} assets",
+            portfolio_config.assets.len()
+        );
+
         // This would implement portfolio-level backtesting with correlation modeling
         // For now, we'll run individual backtests and combine results
         let mut all_trades = Vec::new();
         let mut total_profit_loss = 0.0;
         let mut total_fees = 0.0;
         let mut total_slippage = 0.0;
-        
+
         for asset in &portfolio_config.assets {
             if let Some(signals) = signals_by_asset.get(asset) {
                 let results = self.run_backtest(signals.clone(), ml_model).await;
@@ -1883,12 +1968,12 @@ impl BacktestEngine {
                 total_slippage += results.total_slippage_loss;
             }
         }
-        
+
         // Calculate combined metrics
         let total_trades = all_trades.len();
         let winning_trades = all_trades.iter().filter(|t| t.profit_loss > 0.0).count();
         let losing_trades = total_trades - winning_trades;
-        
+
         BacktestResults {
             config: self.config.clone(),
             total_trades,
@@ -1908,7 +1993,7 @@ impl BacktestEngine {
             individual_trades: all_trades,
         }
     }
-    
+
     /// Run portfolio backtest with smart routing
     pub async fn run_portfolio_backtest_with_routing(
         &self,
@@ -1917,16 +2002,18 @@ impl BacktestEngine {
         portfolio_config: PortfolioBacktestConfig,
         router: &SmartRouter,
     ) -> BacktestResults {
-        tracing::info!("Starting portfolio backtest with smart routing for {} assets", 
-                      portfolio_config.assets.len());
-        
+        tracing::info!(
+            "Starting portfolio backtest with smart routing for {} assets",
+            portfolio_config.assets.len()
+        );
+
         // This would implement portfolio-level backtesting with smart routing
         // For now, we'll run individual backtests and combine results
         let mut all_trades = Vec::new();
         let mut total_profit_loss = 0.0;
         let mut total_fees = 0.0;
         let mut total_slippage = 0.0;
-        
+
         for asset in &portfolio_config.assets {
             if let Some(signals) = signals_by_asset.get(asset) {
                 let results = self.run_backtest(signals.clone(), ml_model).await;
@@ -1936,7 +2023,7 @@ impl BacktestEngine {
                 total_slippage += results.total_slippage_loss;
             }
         }
-        
+
         // Calculate combined metrics
         let total_trades = all_trades.len();
         let winning_trades = all_trades.iter().filter(|t| t.profit_loss > 0.0).count();
@@ -1951,12 +2038,12 @@ impl BacktestEngine {
         } else {
             0.0
         };
-        
+
         // Calculate drawdown
         let mut peak_capital = self.config.initial_capital;
         let mut max_drawdown = 0.0;
         let mut current_capital = self.config.initial_capital;
-        
+
         for trade in &all_trades {
             current_capital += trade.profit_loss - trade.fees_paid - trade.slippage_loss;
             if current_capital > peak_capital {
@@ -1967,7 +2054,7 @@ impl BacktestEngine {
                 max_drawdown = drawdown;
             }
         }
-        
+
         // Calculate risk metrics (simplified)
         let returns: Vec<f64> = all_trades.iter().map(|t| t.profit_loss_pct).collect();
         let sharpe_ratio = self.calculate_sharpe_ratio(&returns);
@@ -1977,9 +2064,10 @@ impl BacktestEngine {
         } else {
             0.0
         };
-        
-        let (max_consecutive_wins, max_consecutive_losses) = self.calculate_consecutive_trades(&all_trades);
-        
+
+        let (max_consecutive_wins, max_consecutive_losses) =
+            self.calculate_consecutive_trades(&all_trades);
+
         BacktestResults {
             config: self.config.clone(),
             total_trades,
@@ -1999,31 +2087,43 @@ impl BacktestEngine {
             individual_trades: all_trades,
         }
     }
-    
+
     /// Run paper trade backtest (live-replay with real clock)
-    pub async fn run_paper_trade_backtest(&mut self, signals: Vec<Signal>, ml_model: &MlModel, config: PaperTradeConfig) -> BacktestResults {
+    pub async fn run_paper_trade_backtest(
+        &mut self,
+        signals: Vec<Signal>,
+        ml_model: &MlModel,
+        config: PaperTradeConfig,
+    ) -> BacktestResults {
         if !config.enabled {
             return self.empty_results();
         }
-        
-        tracing::info!("Starting paper trade backtest with time warp factor: {}", config.time_warp_factor);
-        
+
+        tracing::info!(
+            "Starting paper trade backtest with time warp factor: {}",
+            config.time_warp_factor
+        );
+
         // Set time warp factor
         self.clock.set_time_warp(config.time_warp_factor);
-        
+
         // If in shadow mode, we don't actually execute trades but simulate them
         if config.shadow_mode {
             tracing::info!("Running in shadow mode - simulating trades without execution");
         }
-        
+
         // Run the backtest with real-time clock advancement
         let results = self.run_backtest_with_real_time(signals, ml_model).await;
-        
+
         results
     }
-    
+
     /// Run backtest with real-time clock advancement
-    async fn run_backtest_with_real_time(&mut self, signals: Vec<Signal>, ml_model: &MlModel) -> BacktestResults {
+    async fn run_backtest_with_real_time(
+        &mut self,
+        signals: Vec<Signal>,
+        ml_model: &MlModel,
+    ) -> BacktestResults {
         let mut capital = self.config.initial_capital;
         let mut trades: Vec<TradeResult> = Vec::new();
         let mut peak_capital = capital;
@@ -2032,33 +2132,35 @@ impl BacktestEngine {
         let mut max_consecutive_losses = 0;
         let mut current_consecutive_wins = 0;
         let mut current_consecutive_losses = 0;
-        
+
         let mut last_time = std::time::Instant::now();
-        
+
         for signal in signals {
             // Advance clock based on real time
             let now = std::time::Instant::now();
             let elapsed = now.duration_since(last_time).as_millis() as u64;
             self.clock.advance(elapsed);
             last_time = now;
-            
+
             // Skip signals outside our backtest time range
-            if (signal.seen_at_ms as i64) < self.config.start_time || (signal.seen_at_ms as i64) > self.config.end_time {
+            if (signal.seen_at_ms as i64) < self.config.start_time
+                || (signal.seen_at_ms as i64) > self.config.end_time
+            {
                 continue;
             }
-            
+
             // Process signal with ML model
             if let Some(plan) = ml_model.process_signal(&signal).await {
                 // Simulate risk evaluation
                 let decision = sniper_risk::evaluate_trade(&plan);
-                
+
                 if decision.allow {
                     // Simulate trade execution
                     if let Some(result) = self.simulate_trade(&plan, &signal).await {
                         let profit_loss = result.profit_loss;
                         capital += profit_loss - result.fees_paid - result.slippage_loss;
                         trades.push(result);
-                        
+
                         // Update consecutive win/loss counters
                         if profit_loss > 0.0 {
                             current_consecutive_wins += 1;
@@ -2073,12 +2175,12 @@ impl BacktestEngine {
                                 max_consecutive_losses = current_consecutive_losses;
                             }
                         }
-                        
+
                         // Update drawdown metrics
                         if capital > peak_capital {
                             peak_capital = capital;
                         }
-                        
+
                         let drawdown = (peak_capital - capital) / peak_capital;
                         if drawdown > max_drawdown {
                             max_drawdown = drawdown;
@@ -2087,7 +2189,7 @@ impl BacktestEngine {
                 }
             }
         }
-        
+
         // Calculate final metrics
         let total_trades = trades.len();
         let winning_trades = trades.iter().filter(|t| t.profit_loss > 0.0).count();
@@ -2105,14 +2207,18 @@ impl BacktestEngine {
         } else {
             0.0
         };
-        
+
         // Calculate Sharpe ratio (assuming risk-free rate of 0)
         let returns: Vec<f64> = trades.iter().map(|t| t.profit_loss_pct).collect();
         let sharpe_ratio = if returns.is_empty() {
             0.0
         } else {
             let mean_return: f64 = returns.iter().sum::<f64>() / returns.len() as f64;
-            let variance: f64 = returns.iter().map(|r| (r - mean_return).powi(2)).sum::<f64>() / returns.len() as f64;
+            let variance: f64 = returns
+                .iter()
+                .map(|r| (r - mean_return).powi(2))
+                .sum::<f64>()
+                / returns.len() as f64;
             let std_dev = variance.sqrt();
             if std_dev > 0.0 {
                 mean_return / std_dev
@@ -2120,15 +2226,17 @@ impl BacktestEngine {
                 0.0
             }
         };
-        
+
         // Calculate Sortino ratio (considering only downside deviation)
         let sortino_ratio = if returns.is_empty() {
             0.0
         } else {
             let mean_return: f64 = returns.iter().sum::<f64>() / returns.len() as f64;
-            let downside_returns: Vec<f64> = returns.iter().filter(|&&r| r < 0.0).cloned().collect();
+            let downside_returns: Vec<f64> =
+                returns.iter().filter(|&&r| r < 0.0).cloned().collect();
             let downside_variance: f64 = if !downside_returns.is_empty() {
-                downside_returns.iter().map(|r| r.powi(2)).sum::<f64>() / downside_returns.len() as f64
+                downside_returns.iter().map(|r| r.powi(2)).sum::<f64>()
+                    / downside_returns.len() as f64
             } else {
                 0.0
             };
@@ -2139,14 +2247,14 @@ impl BacktestEngine {
                 0.0
             }
         };
-        
+
         // Calculate Calmar ratio
         let calmar_ratio = if max_drawdown > 0.0 {
             (total_profit_loss / self.config.initial_capital) / max_drawdown
         } else {
             0.0
         };
-        
+
         BacktestResults {
             config: self.config.clone(),
             total_trades,
@@ -2166,7 +2274,7 @@ impl BacktestEngine {
             individual_trades: trades,
         }
     }
-    
+
     /// Run scenario testing for stress testing
     pub async fn run_scenario_testing(
         &self,
@@ -2174,31 +2282,37 @@ impl BacktestEngine {
         ml_model: &MlModel,
         scenario_config: ScenarioTestConfig,
     ) -> ChaosTestResults {
-        tracing::info!("Starting scenario testing with {} scenarios", scenario_config.scenarios.len());
-        
+        tracing::info!(
+            "Starting scenario testing with {} scenarios",
+            scenario_config.scenarios.len()
+        );
+
         // Run baseline backtest first if not provided
         let baseline_performance = match scenario_config.baseline_performance {
             Some(ref results) => results.clone(),
             None => self.run_backtest(signals.clone(), ml_model).await,
         };
-        
+
         let mut scenario_results = Vec::new();
-        
+
         // Run each scenario
         for scenario in &scenario_config.scenarios {
             tracing::info!("Running scenario: {:?}", scenario);
-            
+
             // Apply scenario to a copy of the engine
-            let mut scenario_engine = self.clone_with_scenario(scenario);
-            
+            let scenario_engine = self.clone_with_scenario(scenario);
+
             // Run backtest with scenario
-            let performance = scenario_engine.run_backtest(signals.clone(), ml_model).await;
-            
+            let performance = scenario_engine
+                .run_backtest(signals.clone(), ml_model)
+                .await;
+
             // Calculate impact metrics
             let impact_metrics = self.calculate_chaos_impact(&baseline_performance, &performance);
-            
+
             scenario_results.push(ChaosScenarioResult {
-                scenario: ChaosScenario::NetworkLatency { // Placeholder mapping
+                scenario: ChaosScenario::NetworkLatency {
+                    // Placeholder mapping
                     base_latency_ms: 50,
                     additional_latency_ms: 100,
                     affected_percentage: 0.1,
@@ -2207,10 +2321,10 @@ impl BacktestEngine {
                 impact_metrics,
             });
         }
-        
+
         // Calculate overall impact
         let overall_impact = self.calculate_overall_chaos_impact(&scenario_results);
-        
+
         ChaosTestResults {
             config: ChaosTestConfig {
                 enabled: true,
@@ -2221,11 +2335,11 @@ impl BacktestEngine {
             overall_impact,
         }
     }
-    
+
     /// Create a copy of the engine with scenario applied
     fn clone_with_scenario(&self, scenario: &MarketScenario) -> Self {
         let mut scenario_engine = self.clone();
-        
+
         // Apply scenario-specific modifications
         match scenario {
             MarketScenario::NetworkLatency { latency_ms, .. } => {
@@ -2234,32 +2348,33 @@ impl BacktestEngine {
                     ExecutionModelType::Simple => {
                         // Increase slippage to simulate network effects
                         scenario_engine.config.slippage_pct *= 1.0 + (latency_ms / 100) as f64;
-                    },
+                    }
                     ExecutionModelType::OrderBook => {
                         // For order book model, we might adjust latency
-                    },
+                    }
                     ExecutionModelType::Impact => {
                         // For impact model, we might adjust the k coefficient
-                        scenario_engine.slippage_model.k_coefficient *= 1.0 + (latency_ms / 50) as f64;
-                    },
+                        scenario_engine.slippage_model.k_coefficient *=
+                            1.0 + (latency_ms / 50) as f64;
+                    }
                 }
-            },
+            }
             MarketScenario::GasSpike { multiplier, .. } => {
                 // Increase trading fees to simulate gas spike
                 scenario_engine.config.trading_fee_pct *= multiplier;
-            },
+            }
             MarketScenario::MarketVolatility { multiplier, .. } => {
                 // Increase slippage as a proxy for volatility
                 scenario_engine.config.slippage_pct *= multiplier;
-            },
+            }
             _ => {
                 // Other scenarios would be implemented as needed
             }
         }
-        
+
         scenario_engine
     }
-    
+
     /// Run chaos testing scenarios
     pub async fn run_chaos_tests(
         &self,
@@ -2267,40 +2382,43 @@ impl BacktestEngine {
         ml_model: &MlModel,
         config: ChaosTestConfig,
     ) -> ChaosTestResults {
-        tracing::info!("Starting chaos testing with {} scenarios", config.scenarios.len());
-        
+        tracing::info!(
+            "Starting chaos testing with {} scenarios",
+            config.scenarios.len()
+        );
+
         // Run baseline backtest first
         let baseline_performance = self.run_backtest(signals.clone(), ml_model).await;
-        
+
         let mut scenario_results = Vec::new();
-        
+
         // Run each chaos scenario
         for scenario in &config.scenarios {
             if !config.enabled {
                 break;
             }
-            
+
             tracing::info!("Running chaos scenario: {:?}", scenario);
-            
+
             // Apply chaos scenario to a copy of the engine
-            let mut chaos_engine = self.clone_with_chaos(scenario);
-            
+            let chaos_engine = self.clone_with_chaos(scenario);
+
             // Run backtest with chaos
             let performance = chaos_engine.run_backtest(signals.clone(), ml_model).await;
-            
+
             // Calculate impact metrics
             let impact_metrics = self.calculate_chaos_impact(&baseline_performance, &performance);
-            
+
             scenario_results.push(ChaosScenarioResult {
                 scenario: scenario.clone(),
                 performance,
                 impact_metrics,
             });
         }
-        
+
         // Calculate overall impact
         let overall_impact = self.calculate_overall_chaos_impact(&scenario_results);
-        
+
         ChaosTestResults {
             config,
             scenario_results,
@@ -2308,48 +2426,53 @@ impl BacktestEngine {
             overall_impact,
         }
     }
-    
+
     /// Create a copy of the engine with chaos scenario applied
     fn clone_with_chaos(&self, scenario: &ChaosScenario) -> Self {
         let mut chaos_engine = self.clone();
-        
+
         // Apply scenario-specific modifications
         match scenario {
-            ChaosScenario::NetworkLatency { additional_latency_ms, .. } => {
+            ChaosScenario::NetworkLatency {
+                additional_latency_ms,
+                ..
+            } => {
                 // In a real implementation, this would modify network handling
                 // For now, we'll simulate by adjusting the config
                 match &chaos_engine.config.execution_model {
                     ExecutionModelType::Simple => {
                         // Increase slippage to simulate network effects
-                        chaos_engine.config.slippage_pct *= 1.0 + (additional_latency_ms / 100) as f64;
-                    },
+                        chaos_engine.config.slippage_pct *=
+                            1.0 + (additional_latency_ms / 100) as f64;
+                    }
                     ExecutionModelType::OrderBook => {
                         // For order book model, we might adjust latency
                         // This would be implemented in the execution simulation
-                    },
+                    }
                     ExecutionModelType::Impact => {
                         // For impact model, we might adjust the k coefficient
-                        chaos_engine.slippage_model.k_coefficient *= 1.0 + (additional_latency_ms / 50) as f64;
-                    },
+                        chaos_engine.slippage_model.k_coefficient *=
+                            1.0 + (additional_latency_ms / 50) as f64;
+                    }
                 }
-            },
+            }
             ChaosScenario::GasSpike { multiplier, .. } => {
                 // Increase trading fees to simulate gas spike
                 chaos_engine.config.trading_fee_pct *= multiplier;
-            },
+            }
             ChaosScenario::MarketVolatility { multiplier, .. } => {
                 // This would affect the market data simulation
                 // For now, we'll increase slippage as a proxy
                 chaos_engine.config.slippage_pct *= multiplier;
-            },
+            }
             _ => {
                 // Other scenarios would be implemented as needed
             }
         }
-        
+
         chaos_engine
     }
-    
+
     /// Run chaos scenario testing
     pub async fn run_chaos_scenario_testing(
         &self,
@@ -2373,52 +2496,61 @@ impl BacktestEngine {
                 },
             };
         }
-        
-        tracing::info!("Starting chaos scenario testing with {} scenarios", config.scenarios.len());
-        
+
+        tracing::info!(
+            "Starting chaos scenario testing with {} scenarios",
+            config.scenarios.len()
+        );
+
         // Run baseline backtest first
         let baseline_performance = self.run_backtest(signals.clone(), ml_model).await;
-        
+
         let mut scenario_results = Vec::new();
-        
+
         // Run each chaos scenario
         for scenario in &config.scenarios {
             tracing::info!("Running chaos scenario: {:?}", scenario);
-            
+
             // Apply scenario to a copy of the engine
-            let mut scenario_engine = self.clone_with_chaos_scenario(scenario);
-            
+            let scenario_engine = self.clone_with_chaos_scenario(scenario);
+
             // Run backtest with scenario
-            let performance = scenario_engine.run_backtest(signals.clone(), ml_model).await;
-            
+            let performance = scenario_engine
+                .run_backtest(signals.clone(), ml_model)
+                .await;
+
             // Calculate impact metrics
             let impact_metrics = self.calculate_chaos_impact(&baseline_performance, &performance);
-            
+
             scenario_results.push(ChaosScenarioResult {
                 scenario: self.map_chaos_scenario_to_legacy(scenario),
                 performance,
                 impact_metrics,
             });
         }
-        
+
         // Calculate overall impact
         let overall_impact = self.calculate_overall_chaos_impact(&scenario_results);
-        
+
         ChaosTestResults {
             config: ChaosTestConfig {
                 enabled: true,
-                scenarios: config.scenarios.iter().map(|s| self.map_chaos_scenario_to_legacy(s)).collect(),
+                scenarios: config
+                    .scenarios
+                    .iter()
+                    .map(|s| self.map_chaos_scenario_to_legacy(s))
+                    .collect(),
             },
             scenario_results,
             baseline_performance,
             overall_impact,
         }
     }
-    
+
     /// Create a copy of the engine with chaos scenario applied
     fn clone_with_chaos_scenario(&self, scenario: &ChaosScenarioType) -> Self {
         let mut chaos_engine = self.clone();
-        
+
         // Apply scenario-specific modifications
         match scenario {
             ChaosScenarioType::NetworkLatency { latency_ms, .. } => {
@@ -2427,55 +2559,64 @@ impl BacktestEngine {
                     ExecutionModelType::Simple => {
                         // Increase slippage to simulate network effects
                         chaos_engine.config.slippage_pct *= 1.0 + (latency_ms / 100) as f64;
-                    },
+                    }
                     ExecutionModelType::OrderBook => {
                         // For order book model, we might adjust latency
-                    },
+                    }
                     ExecutionModelType::Impact => {
                         // For impact model, we might adjust the k coefficient
                         chaos_engine.slippage_model.k_coefficient *= 1.0 + (latency_ms / 50) as f64;
-                    },
+                    }
                 }
-            },
+            }
             ChaosScenarioType::GasSpike { multiplier, .. } => {
                 // Increase trading fees to simulate gas spike
                 chaos_engine.config.trading_fee_pct *= multiplier;
-            },
+            }
             ChaosScenarioType::MarketVolatility { multiplier, .. } => {
                 // Increase slippage as a proxy for volatility
                 chaos_engine.config.slippage_pct *= multiplier;
-            },
+            }
             _ => {
                 // Other scenarios would be implemented as needed
             }
         }
-        
+
         chaos_engine
     }
-    
+
     /// Map new chaos scenario type to legacy type for compatibility
     fn map_chaos_scenario_to_legacy(&self, scenario: &ChaosScenarioType) -> ChaosScenario {
         match scenario {
-            ChaosScenarioType::NetworkLatency { venue, latency_ms, duration_secs, start_time_secs } => {
+            ChaosScenarioType::NetworkLatency {
+                venue: _venue,
+                latency_ms,
+                duration_secs: _duration_secs,
+                start_time_secs: _start_time_secs,
+            } => {
                 ChaosScenario::NetworkLatency {
                     base_latency_ms: 50, // Default base latency
                     additional_latency_ms: *latency_ms,
                     affected_percentage: 0.1, // Default affected percentage
                 }
+            }
+            ChaosScenarioType::GasSpike {
+                multiplier,
+                duration_secs,
+                start_time_secs,
+            } => ChaosScenario::GasSpike {
+                multiplier: *multiplier,
+                duration_secs: *duration_secs,
+                start_time_secs: *start_time_secs,
             },
-            ChaosScenarioType::GasSpike { multiplier, duration_secs, start_time_secs } => {
-                ChaosScenario::GasSpike {
-                    multiplier: *multiplier,
-                    duration_secs: *duration_secs,
-                    start_time_secs: *start_time_secs,
-                }
-            },
-            ChaosScenarioType::MarketVolatility { multiplier, duration_secs, start_time_secs } => {
-                ChaosScenario::MarketVolatility {
-                    multiplier: *multiplier,
-                    duration_secs: *duration_secs,
-                    start_time_secs: *start_time_secs,
-                }
+            ChaosScenarioType::MarketVolatility {
+                multiplier,
+                duration_secs,
+                start_time_secs,
+            } => ChaosScenario::MarketVolatility {
+                multiplier: *multiplier,
+                duration_secs: *duration_secs,
+                start_time_secs: *start_time_secs,
             },
             _ => {
                 // Default fallback
@@ -2487,7 +2628,7 @@ impl BacktestEngine {
             }
         }
     }
-    
+
     /// Calculate impact metrics from a chaos scenario
     fn calculate_chaos_impact(
         &self,
@@ -2495,25 +2636,26 @@ impl BacktestEngine {
         chaos: &BacktestResults,
     ) -> ChaosImpactMetrics {
         let performance_degradation = if baseline.total_profit_loss > 0.0 {
-            ((baseline.total_profit_loss - chaos.total_profit_loss) / baseline.total_profit_loss) * 100.0
+            ((baseline.total_profit_loss - chaos.total_profit_loss) / baseline.total_profit_loss)
+                * 100.0
         } else {
             0.0
         };
-        
+
         let additional_slippage = chaos.total_slippage_loss - baseline.total_slippage_loss;
         let slippage_percentage = if baseline.total_slippage_loss > 0.0 {
             (additional_slippage / baseline.total_slippage_loss) * 100.0
         } else {
             0.0
         };
-        
+
         let failed_trades = baseline.total_trades as f64 - chaos.total_trades as f64;
         let failed_trade_pct = if baseline.total_trades > 0 {
             (failed_trades / baseline.total_trades as f64) * 100.0
         } else {
             0.0
         };
-        
+
         ChaosImpactMetrics {
             performance_degradation_pct: performance_degradation,
             additional_slippage_pct: slippage_percentage,
@@ -2521,7 +2663,7 @@ impl BacktestEngine {
             failed_trade_pct,
         }
     }
-    
+
     /// Calculate overall impact across all chaos scenarios
     fn calculate_overall_chaos_impact(
         &self,
@@ -2535,24 +2677,27 @@ impl BacktestEngine {
                 failed_trade_pct: 0.0,
             };
         }
-        
+
         let total_scenarios = scenario_results.len() as f64;
-        
+
         let avg_performance_degradation: f64 = scenario_results
             .iter()
             .map(|r| r.impact_metrics.performance_degradation_pct)
-            .sum::<f64>() / total_scenarios;
-            
+            .sum::<f64>()
+            / total_scenarios;
+
         let avg_slippage_increase: f64 = scenario_results
             .iter()
             .map(|r| r.impact_metrics.additional_slippage_pct)
-            .sum::<f64>() / total_scenarios;
-            
+            .sum::<f64>()
+            / total_scenarios;
+
         let avg_failed_trades: f64 = scenario_results
             .iter()
             .map(|r| r.impact_metrics.failed_trade_pct)
-            .sum::<f64>() / total_scenarios;
-        
+            .sum::<f64>()
+            / total_scenarios;
+
         ChaosImpactMetrics {
             performance_degradation_pct: avg_performance_degradation,
             additional_slippage_pct: avg_slippage_increase,
@@ -2560,30 +2705,34 @@ impl BacktestEngine {
             failed_trade_pct: avg_failed_trades,
         }
     }
-    
+
     /// Calculate Sharpe ratio
     fn calculate_sharpe_ratio(&self, returns: &[f64]) -> f64 {
         if returns.is_empty() {
             return 0.0;
         }
-        
+
         let mean_return: f64 = returns.iter().sum::<f64>() / returns.len() as f64;
-        let variance: f64 = returns.iter().map(|r| (r - mean_return).powi(2)).sum::<f64>() / returns.len() as f64;
+        let variance: f64 = returns
+            .iter()
+            .map(|r| (r - mean_return).powi(2))
+            .sum::<f64>()
+            / returns.len() as f64;
         let std_dev = variance.sqrt();
-        
+
         if std_dev > 0.0 {
             mean_return / std_dev
         } else {
             0.0
         }
     }
-    
+
     /// Calculate Sortino ratio
     fn calculate_sortino_ratio(&self, returns: &[f64]) -> f64 {
         if returns.is_empty() {
             return 0.0;
         }
-        
+
         let mean_return: f64 = returns.iter().sum::<f64>() / returns.len() as f64;
         let downside_returns: Vec<f64> = returns.iter().filter(|&&r| r < 0.0).cloned().collect();
         let downside_variance: f64 = if !downside_returns.is_empty() {
@@ -2592,14 +2741,14 @@ impl BacktestEngine {
             0.0
         };
         let downside_std_dev = downside_variance.sqrt();
-        
+
         if downside_std_dev > 0.0 {
             mean_return / downside_std_dev
         } else {
             0.0
         }
     }
-    
+
     fn clone(&self) -> Self {
         Self {
             config: self.config.clone(),
@@ -2613,7 +2762,7 @@ impl BacktestEngine {
             market_regimes: self.market_regimes.clone(),
         }
     }
-    
+
     /// Return empty results when backtesting is disabled
     fn empty_results(&self) -> BacktestResults {
         BacktestResults {
@@ -2656,60 +2805,54 @@ mod tests {
             data_path: None,
             execution_model: ExecutionModelType::Simple,
         };
-        
+
         let mut engine = BacktestEngine::new(config);
-        
+
         // Add some mock historical data
-        let data = vec![
-            MarketDataPoint {
-                timestamp: 1000000,
-                token_address: "0xTokenA".to_string(),
-                price_usd: 100.0,
-                volume_24h: 1000000.0,
-                liquidity: 5000000.0,
-            }
-        ];
+        let data = vec![MarketDataPoint {
+            timestamp: 1000000,
+            token_address: "0xTokenA".to_string(),
+            price_usd: 100.0,
+            volume_24h: 1000000.0,
+            liquidity: 5000000.0,
+        }];
         engine.add_historical_data("0xTokenA".to_string(), data);
-        
+
         // Add order book data for advanced execution simulation
-        let order_book_data = vec![
-            OrderBookData {
-                timestamp: 1000000,
-                token_address: "0xTokenA".to_string(),
-                bid_prices: vec![99.5, 99.0, 98.5],
-                bid_volumes: vec![100.0, 200.0, 300.0],
-                ask_prices: vec![100.5, 101.0, 101.5],
-                ask_volumes: vec![100.0, 200.0, 300.0],
-                price_usd: 100.0,
-                volume_24h: 1000000.0,
-                liquidity: 5000000.0,
-            }
-        ];
+        let order_book_data = vec![OrderBookData {
+            timestamp: 1000000,
+            token_address: "0xTokenA".to_string(),
+            bid_prices: vec![99.5, 99.0, 98.5],
+            bid_volumes: vec![100.0, 200.0, 300.0],
+            ask_prices: vec![100.5, 101.0, 101.5],
+            ask_volumes: vec![100.0, 200.0, 300.0],
+            price_usd: 100.0,
+            volume_24h: 1000000.0,
+            liquidity: 5000000.0,
+        }];
         engine.add_order_book_data("0xTokenA".to_string(), order_book_data);
-        
+
         // Set slippage model
         engine.set_slippage_model(SlippageModel {
             model_type: SlippageModelType::Impact,
             k_coefficient: 0.1,
             max_slippage_pct: 5.0,
         });
-        
+
         // Create a mock signal
-        let signals = vec![
-            Signal {
-                source: "dex".into(),
-                kind: "pair_created".into(),
-                chain: ChainRef {
-                    name: "ethereum".into(),
-                    id: 1,
-                },
-                token0: Some("0xTokenA".into()),
-                token1: Some("0xWETH".into()),
-                extra: serde_json::json!({"pair": "0xPairAddress"}),
-                seen_at_ms: 1500000,
-            }
-        ];
-        
+        let signals = vec![Signal {
+            source: "dex".into(),
+            kind: "pair_created".into(),
+            chain: ChainRef {
+                name: "ethereum".into(),
+                id: 1,
+            },
+            token0: Some("0xTokenA".into()),
+            token1: Some("0xWETH".into()),
+            extra: serde_json::json!({"pair": "0xPairAddress"}),
+            seen_at_ms: 1500000,
+        }];
+
         // Create ML model
         let ml_config = MlConfig {
             model_path: "models/test_model.onnx".to_string(),
@@ -2717,16 +2860,16 @@ mod tests {
             enabled: true,
         };
         let ml_model = MlModel::new(ml_config);
-        
+
         // Run backtest
         let results = engine.run_backtest(signals, &ml_model).await;
-        
+
         assert_eq!(results.total_trades, 1);
         assert!(results.total_profit_loss > 0.0);
         assert_eq!(results.win_rate, 1.0);
         assert!(results.total_slippage_loss > 0.0);
     }
-    
+
     #[tokio::test]
     async fn test_backtest_engine_disabled() {
         let config = BacktestConfig {
@@ -2740,9 +2883,9 @@ mod tests {
             data_path: None,
             execution_model: ExecutionModelType::Simple,
         };
-        
+
         let engine = BacktestEngine::new(config);
-        
+
         let signals = vec![];
         let ml_config = MlConfig {
             model_path: "models/test_model.onnx".to_string(),
@@ -2750,13 +2893,13 @@ mod tests {
             enabled: true,
         };
         let ml_model = MlModel::new(ml_config);
-        
+
         let results = engine.run_backtest(signals, &ml_model).await;
-        
+
         assert_eq!(results.total_trades, 0);
         assert_eq!(results.total_profit_loss, 0.0);
     }
-    
+
     #[tokio::test]
     async fn test_walk_forward_optimization() {
         let config = BacktestConfig {
@@ -2770,9 +2913,9 @@ mod tests {
             data_path: None,
             execution_model: ExecutionModelType::Simple,
         };
-        
+
         let engine = BacktestEngine::new(config);
-        
+
         // Create test signals spanning the time range
         let signals = vec![
             Signal {
@@ -2798,9 +2941,9 @@ mod tests {
                 token1: Some("0xWETH".into()),
                 extra: serde_json::json!({"pair": "0xPairAddress2"}),
                 seen_at_ms: 1600000,
-            }
+            },
         ];
-        
+
         // Create ML model
         let ml_config = MlConfig {
             model_path: "models/test_model.onnx".to_string(),
@@ -2808,7 +2951,7 @@ mod tests {
             enabled: true,
         };
         let ml_model = MlModel::new(ml_config);
-        
+
         // Configure walk-forward optimization
         let wf_config = WalkForwardConfig {
             train_window_secs: 200000,
@@ -2817,19 +2960,25 @@ mod tests {
             min_train_trades: 1,
             min_test_trades: 1,
         };
-        
+
         // Run walk-forward optimization
-        let results = engine.run_walk_forward_optimization(signals, &ml_model, wf_config).await;
-        
+        let results = engine
+            .run_walk_forward_optimization(signals, &ml_model, wf_config)
+            .await;
+
         // Print debug information
         println!("Number of windows: {}", results.windows.len());
-        println!("Overall trades: {}", results.overall_performance.total_trades);
-        
+        println!(
+            "Overall trades: {}",
+            results.overall_performance.total_trades
+        );
+
         // For now, just verify the function runs without error
         // The actual logic can be tested more thoroughly in integration tests
-        assert!(results.overall_performance.total_trades >= 0);
+        // total_trades is a u32/u64, so it's always >= 0
+        // No need to assert anything here
     }
-    
+
     #[tokio::test]
     async fn test_chaos_testing() {
         let config = BacktestConfig {
@@ -2843,25 +2992,23 @@ mod tests {
             data_path: None,
             execution_model: ExecutionModelType::Simple,
         };
-        
+
         let engine = BacktestEngine::new(config);
-        
+
         // Create test signals
-        let signals = vec![
-            Signal {
-                source: "dex".into(),
-                kind: "pair_created".into(),
-                chain: ChainRef {
-                    name: "ethereum".into(),
-                    id: 1,
-                },
-                token0: Some("0xTokenA".into()),
-                token1: Some("0xWETH".into()),
-                extra: serde_json::json!({"pair": "0xPairAddress"}),
-                seen_at_ms: 1500000,
-            }
-        ];
-        
+        let signals = vec![Signal {
+            source: "dex".into(),
+            kind: "pair_created".into(),
+            chain: ChainRef {
+                name: "ethereum".into(),
+                id: 1,
+            },
+            token0: Some("0xTokenA".into()),
+            token1: Some("0xWETH".into()),
+            extra: serde_json::json!({"pair": "0xPairAddress"}),
+            seen_at_ms: 1500000,
+        }];
+
         // Create ML model
         let ml_config = MlConfig {
             model_path: "models/test_model.onnx".to_string(),
@@ -2869,7 +3016,7 @@ mod tests {
             enabled: true,
         };
         let ml_model = MlModel::new(ml_config);
-        
+
         // Configure chaos testing
         let chaos_config = ChaosTestConfig {
             enabled: true,
@@ -2888,17 +3035,20 @@ mod tests {
                     multiplier: 1.5,
                     duration_secs: 7200,
                     start_time_secs: 2000,
-                }
+                },
             ],
         };
-        
+
         // Run chaos testing
-        let results = engine.run_chaos_tests(signals, &ml_model, chaos_config).await;
-        
+        let results = engine
+            .run_chaos_tests(signals, &ml_model, chaos_config)
+            .await;
+
         // Verify results
         assert_eq!(results.config.scenarios.len(), 3);
         assert_eq!(results.scenario_results.len(), 3);
-        assert!(results.baseline_performance.total_trades >= 0);
+        // total_trades is a u32/u64, so it's always >= 0
+        // No need to assert anything here
     }
 
     #[test]
@@ -2914,27 +3064,25 @@ mod tests {
             data_path: None,
             execution_model: ExecutionModelType::OrderBook,
         };
-        
+
         let mut engine = BacktestEngine::new(config);
-        
+
         // Add order book data
-        let order_book_data = vec![
-            OrderBookData {
-                timestamp: 1000000,
-                token_address: "0xTokenA".to_string(),
-                bid_prices: vec![99.5, 99.0, 98.5],
-                bid_volumes: vec![100.0, 200.0, 300.0],
-                ask_prices: vec![100.5, 101.0, 101.5],
-                ask_volumes: vec![100.0, 200.0, 300.0],
-                price_usd: 100.0,
-                volume_24h: 1000000.0,
-                liquidity: 5000000.0,
-            }
-        ];
+        let order_book_data = vec![OrderBookData {
+            timestamp: 1000000,
+            token_address: "0xTokenA".to_string(),
+            bid_prices: vec![99.5, 99.0, 98.5],
+            bid_volumes: vec![100.0, 200.0, 300.0],
+            ask_prices: vec![100.5, 101.0, 101.5],
+            ask_volumes: vec![100.0, 200.0, 300.0],
+            price_usd: 100.0,
+            volume_24h: 1000000.0,
+            liquidity: 5000000.0,
+        }];
         engine.add_order_book_data("0xTokenA".to_string(), order_book_data);
-        
+
         let (price, details) = engine.simulate_order_book_execution("0xTokenA", 100.0, 150.0);
-        
+
         // Should have walked the order book and gotten an average price
         assert!(price > 100.0); // Price should be higher due to buying
         assert_eq!(details.model_used, "OrderBook");

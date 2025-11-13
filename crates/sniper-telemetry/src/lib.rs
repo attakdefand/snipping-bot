@@ -6,6 +6,7 @@ pub mod alerts;
 pub mod metrics;
 pub mod tracing;
 
+use alerts::{AlertManager, AlertManagerConfig};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -16,13 +17,25 @@ pub struct TelemetryConfig {
     pub metrics_enabled: bool,
     pub tracing_enabled: bool,
     pub alerting_enabled: bool,
+    pub alert_manager_config: Option<AlertManagerConfig>,
+}
+
+impl Default for TelemetryConfig {
+    fn default() -> Self {
+        Self {
+            metrics_enabled: true,
+            tracing_enabled: true,
+            alerting_enabled: true,
+            alert_manager_config: Some(AlertManagerConfig::default()),
+        }
+    }
 }
 
 /// Main telemetry system
 pub struct TelemetrySystem {
     metrics: Option<metrics::Metrics>,
     tracer: Option<tracing::Tracer>,
-    alert_manager: Option<alerts::AlertManager>,
+    alert_manager: Option<AlertManager>,
 }
 
 impl TelemetrySystem {
@@ -41,7 +54,8 @@ impl TelemetrySystem {
         };
 
         let alert_manager = if config.alerting_enabled {
-            Some(alerts::AlertManager::new()?)
+            let alert_config = config.alert_manager_config.unwrap_or_default();
+            Some(AlertManager::new(alert_config)?)
         } else {
             None
         };
@@ -64,7 +78,7 @@ impl TelemetrySystem {
     }
 
     /// Get alert manager
-    pub fn alert_manager(&self) -> Option<&alerts::AlertManager> {
+    pub fn alert_manager(&self) -> Option<&AlertManager> {
         self.alert_manager.as_ref()
     }
 
@@ -93,6 +107,37 @@ impl TelemetrySystem {
     pub async fn send_alert(&self, message: &str, severity: alerts::AlertSeverity) -> Result<()> {
         if let Some(alert_manager) = &self.alert_manager {
             alert_manager.send_alert(message, severity).await
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Send a trade alert
+    pub async fn send_trade_alert(
+        &self,
+        pair: &str,
+        side: &str,
+        price: f64,
+        amount: f64,
+        profit: Option<f64>,
+    ) -> Result<()> {
+        if let Some(alert_manager) = &self.alert_manager {
+            alert_manager
+                .send_trade_alert(pair, side, price, amount, profit)
+                .await
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Send a risk alert
+    pub async fn send_risk_alert(
+        &self,
+        message: &str,
+        severity: alerts::AlertSeverity,
+    ) -> Result<()> {
+        if let Some(alert_manager) = &self.alert_manager {
+            alert_manager.send_risk_alert(message, severity).await
         } else {
             Ok(())
         }
@@ -133,6 +178,7 @@ impl Drop for Timer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alerts::AlertManagerConfig;
 
     #[test]
     fn test_telemetry_system_creation() {
@@ -140,6 +186,7 @@ mod tests {
             metrics_enabled: true,
             tracing_enabled: true,
             alerting_enabled: true,
+            alert_manager_config: Some(AlertManagerConfig::default()),
         };
 
         let telemetry = TelemetrySystem::new(config).unwrap();
@@ -154,6 +201,7 @@ mod tests {
             metrics_enabled: false,
             tracing_enabled: false,
             alerting_enabled: false,
+            alert_manager_config: None,
         };
 
         let telemetry = TelemetrySystem::new(config).unwrap();

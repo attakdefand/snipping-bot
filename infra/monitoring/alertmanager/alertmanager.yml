@@ -1,0 +1,77 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'localhost:25'
+  smtp_from: 'alertmanager@snippingbot.com'
+  smtp_require_tls: false
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'slack-notifications'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+    - match:
+        severity: warning
+      receiver: 'slack-warning'
+    - match:
+        severity: info
+      receiver: 'slack-info'
+
+receivers:
+  - name: 'slack-notifications'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts'
+        send_resolved: true
+        title: '{{ template "slack.title" . }}'
+        text: '{{ template "slack.text" . }}'
+        icon_emoji: ':rotating_light:'
+        username: 'Alertmanager'
+
+  - name: 'slack-critical'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#critical-alerts'
+        send_resolved: true
+        title: '[CRITICAL] {{ template "slack.title" . }}'
+        text: '{{ template "slack.text" . }}'
+        icon_emoji: ':rotating_light:'
+        username: 'Alertmanager'
+        color: 'danger'
+
+  - name: 'slack-warning'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#warning-alerts'
+        send_resolved: true
+        title: '[WARNING] {{ template "slack.title" . }}'
+        text: '{{ template "slack.text" . }}'
+        icon_emoji: ':warning:'
+        username: 'Alertmanager'
+        color: 'warning'
+
+  - name: 'slack-info'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#info-alerts'
+        send_resolved: true
+        title: '[INFO] {{ template "slack.title" . }}'
+        text: '{{ template "slack.text" . }}'
+        icon_emoji: ':information_source:'
+        username: 'Alertmanager'
+        color: '#439FE0'
+
+  - name: 'email-notifications'
+    email_configs:
+      - to: 'ops@snippingbot.com'
+        send_resolved: true
+        headers:
+          Subject: '{{ template "email.default.subject" . }}'
+        html: '{{ template "email.default.html" . }}'
+
+templates:
+  - '/etc/alertmanager/template/*.tmpl'

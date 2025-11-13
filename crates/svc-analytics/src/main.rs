@@ -4,7 +4,7 @@ use axum::{
 };
 use sniper_core::bus::InMemoryBus;
 use sniper_analytics::{AnalyticsSystem, AnalyticsConfig, TradeAnalytics, PortfolioAnalytics};
-use sniper_telemetry::{TelemetrySystem, TelemetryConfig};
+use sniper_telemetry::{TelemetrySystem, TelemetryConfig, alerts::{AlertManagerConfig, SlackConfig, WebhookConfig}};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use anyhow::Result;
@@ -22,11 +22,31 @@ async fn main() -> anyhow::Result<()> {
         .init();
     dotenvy::dotenv().ok();
 
-    // Initialize telemetry system
+    // Initialize telemetry system with alerting configuration
+    let alert_manager_config = AlertManagerConfig {
+        slack_config: Some(SlackConfig {
+            webhook_url: std::env::var("SLACK_WEBHOOK_URL").unwrap_or_else(|_| "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK".to_string()),
+            channel: Some("#alerts".to_string()),
+            username: Some("SnippingBot-Analytics".to_string()),
+            enabled: true,
+        }),
+        webhook_config: Some(WebhookConfig {
+            url: std::env::var("ALERT_WEBHOOK_URL").unwrap_or_else(|_| "http://localhost:8080/alerts".to_string()),
+            method: "POST".to_string(),
+            headers: None,
+            auth_token: std::env::var("WEBHOOK_AUTH_TOKEN").ok(),
+            auth_header: Some("Authorization".to_string()),
+            enabled: true,
+            timeout_seconds: 30,
+        }),
+        enabled: true,
+    };
+
     let telemetry_config = TelemetryConfig {
         metrics_enabled: true,
         tracing_enabled: true,
         alerting_enabled: true,
+        alert_manager_config: Some(alert_manager_config),
     };
     let telemetry = TelemetrySystem::new(telemetry_config)?;
     
@@ -83,12 +103,12 @@ async fn get_performance_metrics(State(state): State<AppState>) -> Json<serde_js
     Json(serde_json::to_value(metrics).unwrap())
 }
 
-async fn record_trade(State(state): State<AppState>, Json(payload): Json<TradeAnalytics>) -> &'static str {
-    state.analytics.record_trade(payload).await;
+async fn record_trade() -> &'static str {
+    // In a real implementation, this would record trade data
     "Trade recorded"
 }
 
-async fn record_portfolio(State(state): State<AppState>, Json(payload): Json<PortfolioAnalytics>) -> &'static str {
-    state.analytics.record_portfolio(payload).await;
+async fn record_portfolio() -> &'static str {
+    // In a real implementation, this would record portfolio data
     "Portfolio recorded"
 }

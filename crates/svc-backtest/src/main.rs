@@ -1,21 +1,20 @@
 use axum::{
+    extract::State,
     routing::{get, post},
-    Json, Router, extract::State,
+    Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use sniper_core::{bus::InMemoryBus, types::Signal};
 use sniper_backtest::{
-    BacktestEngine, BacktestConfig, BacktestResults, 
-    WalkForwardConfig, WalkForwardResults,
-    PortfolioBacktestConfig, ChaosTestConfig, ChaosTestResults,
-    ScenarioTestConfig, PaperTradeConfig, ForkTestConfig,
-    ForwardTestConfig, ForwardTestResults, ForkTestResults
+    BacktestConfig, BacktestEngine, BacktestResults, ChaosTestConfig, ChaosTestResults,
+    ForkTestConfig, ForkTestResults, ForwardTestConfig, ForwardTestResults, PaperTradeConfig,
+    PortfolioBacktestConfig, ScenarioTestConfig, WalkForwardConfig, WalkForwardResults,
 };
+use sniper_core::{bus::InMemoryBus, types::Signal};
 use sniper_ml::{MlConfig, MlModel};
-use sniper_telemetry::{TelemetrySystem, TelemetryConfig};
+use sniper_telemetry::{alerts::AlertManagerConfig, TelemetryConfig, TelemetrySystem};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use std::collections::HashMap;
 
 #[derive(Clone)]
 struct AppState {
@@ -37,9 +36,10 @@ async fn main() -> anyhow::Result<()> {
         metrics_enabled: true,
         tracing_enabled: true,
         alerting_enabled: true,
+        alert_manager_config: Some(AlertManagerConfig::default()),
     };
     let telemetry = TelemetrySystem::new(telemetry_config)?;
-    
+
     // Initialize ML model
     let ml_config = MlConfig {
         model_path: "models/trading_model.onnx".to_string(),
@@ -47,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
         enabled: true,
     };
     let ml_model = Arc::new(MlModel::new(ml_config));
-    
+
     // Initialize backtest engine
     let backtest_config = BacktestConfig {
         start_time: 1000000,
@@ -61,17 +61,17 @@ async fn main() -> anyhow::Result<()> {
         execution_model: sniper_backtest::ExecutionModelType::Simple,
     };
     let backtest_engine = Arc::new(BacktestEngine::new(backtest_config));
-    
+
     // Initialize message bus
     let bus = InMemoryBus::new(1024);
-    
+
     // Set up application state
     let state = AppState {
         backtest_engine,
         ml_model,
         bus,
     };
-    
+
     // Set up HTTP routes
     let app = Router::new()
         .route("/", get(root))
@@ -89,9 +89,9 @@ async fn main() -> anyhow::Result<()> {
     // Run HTTP server
     let listener = TcpListener::bind("0.0.0.0:3004").await?;
     tracing::info!("Backtest service listening on 0.0.0.0:3004");
-    
+
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
 
@@ -104,8 +104,14 @@ struct BacktestRequest {
     signals: Vec<Signal>,
 }
 
-async fn run_backtest(State(state): State<AppState>, Json(payload): Json<BacktestRequest>) -> Json<BacktestResults> {
-    let results = state.backtest_engine.run_backtest(payload.signals, &state.ml_model).await;
+async fn run_backtest(
+    State(state): State<AppState>,
+    Json(payload): Json<BacktestRequest>,
+) -> Json<BacktestResults> {
+    let results = state
+        .backtest_engine
+        .run_backtest(payload.signals, &state.ml_model)
+        .await;
     Json(results)
 }
 
@@ -115,8 +121,14 @@ struct PortfolioBacktestRequest {
     config: PortfolioBacktestConfig,
 }
 
-async fn run_portfolio_backtest(State(state): State<AppState>, Json(payload): Json<PortfolioBacktestRequest>) -> Json<BacktestResults> {
-    let results = state.backtest_engine.run_portfolio_backtest(payload.signals_by_asset, &state.ml_model, payload.config).await;
+async fn run_portfolio_backtest(
+    State(state): State<AppState>,
+    Json(payload): Json<PortfolioBacktestRequest>,
+) -> Json<BacktestResults> {
+    let results = state
+        .backtest_engine
+        .run_portfolio_backtest(payload.signals_by_asset, &state.ml_model, payload.config)
+        .await;
     Json(results)
 }
 
@@ -126,8 +138,14 @@ struct ScenarioTestRequest {
     config: ScenarioTestConfig,
 }
 
-async fn run_scenario_testing(State(state): State<AppState>, Json(payload): Json<ScenarioTestRequest>) -> Json<ChaosTestResults> {
-    let results = state.backtest_engine.run_scenario_testing(payload.signals, &state.ml_model, payload.config).await;
+async fn run_scenario_testing(
+    State(state): State<AppState>,
+    Json(payload): Json<ScenarioTestRequest>,
+) -> Json<ChaosTestResults> {
+    let results = state
+        .backtest_engine
+        .run_scenario_testing(payload.signals, &state.ml_model, payload.config)
+        .await;
     Json(results)
 }
 
@@ -137,8 +155,14 @@ struct WalkForwardRequest {
     config: WalkForwardConfig,
 }
 
-async fn run_walk_forward(State(state): State<AppState>, Json(payload): Json<WalkForwardRequest>) -> Json<WalkForwardResults> {
-    let results = state.backtest_engine.run_walk_forward_optimization(payload.signals, &state.ml_model, payload.config).await;
+async fn run_walk_forward(
+    State(state): State<AppState>,
+    Json(payload): Json<WalkForwardRequest>,
+) -> Json<WalkForwardResults> {
+    let results = state
+        .backtest_engine
+        .run_walk_forward_optimization(payload.signals, &state.ml_model, payload.config)
+        .await;
     Json(results)
 }
 
@@ -148,8 +172,14 @@ struct ChaosTestRequest {
     config: ChaosTestConfig,
 }
 
-async fn run_chaos_tests(State(state): State<AppState>, Json(payload): Json<ChaosTestRequest>) -> Json<ChaosTestResults> {
-    let results = state.backtest_engine.run_chaos_tests(payload.signals, &state.ml_model, payload.config).await;
+async fn run_chaos_tests(
+    State(state): State<AppState>,
+    Json(payload): Json<ChaosTestRequest>,
+) -> Json<ChaosTestResults> {
+    let results = state
+        .backtest_engine
+        .run_chaos_tests(payload.signals, &state.ml_model, payload.config)
+        .await;
     Json(results)
 }
 
@@ -159,10 +189,15 @@ struct PaperTradeRequest {
     config: PaperTradeConfig,
 }
 
-async fn run_paper_trade(State(state): State<AppState>, Json(payload): Json<PaperTradeRequest>) -> Json<BacktestResults> {
+async fn run_paper_trade(
+    State(state): State<AppState>,
+    Json(payload): Json<PaperTradeRequest>,
+) -> Json<BacktestResults> {
     // Clone the engine for paper trade backtest since it needs to be mutable
     let mut engine = (*state.backtest_engine).clone();
-    let results = engine.run_paper_trade_backtest(payload.signals, &state.ml_model, payload.config).await;
+    let results = engine
+        .run_paper_trade_backtest(payload.signals, &state.ml_model, payload.config)
+        .await;
     Json(results)
 }
 
@@ -172,8 +207,14 @@ struct ForkTestRequest {
     config: ForkTestConfig,
 }
 
-async fn run_fork_test(State(state): State<AppState>, Json(payload): Json<ForkTestRequest>) -> Json<ForkTestResults> {
-    let results = state.backtest_engine.run_fork_test(payload.signals, &state.ml_model, payload.config).await;
+async fn run_fork_test(
+    State(state): State<AppState>,
+    Json(payload): Json<ForkTestRequest>,
+) -> Json<ForkTestResults> {
+    let results = state
+        .backtest_engine
+        .run_fork_test(payload.signals, &state.ml_model, payload.config)
+        .await;
     Json(results)
 }
 
@@ -183,8 +224,14 @@ struct ForwardTestRequest {
     config: ForwardTestConfig,
 }
 
-async fn run_forward_test(State(state): State<AppState>, Json(payload): Json<ForwardTestRequest>) -> Json<ForwardTestResults> {
-    let results = state.backtest_engine.run_forward_test(payload.signals, &state.ml_model, payload.config).await;
+async fn run_forward_test(
+    State(state): State<AppState>,
+    Json(payload): Json<ForwardTestRequest>,
+) -> Json<ForwardTestResults> {
+    let results = state
+        .backtest_engine
+        .run_forward_test(payload.signals, &state.ml_model, payload.config)
+        .await;
     Json(results)
 }
 
@@ -192,7 +239,10 @@ async fn get_config(State(state): State<AppState>) -> Json<BacktestConfig> {
     Json(state.backtest_engine.config().clone())
 }
 
-async fn update_config(State(_state): State<AppState>, Json(payload): Json<BacktestConfig>) -> &'static str {
+async fn update_config(
+    State(_state): State<AppState>,
+    Json(payload): Json<BacktestConfig>,
+) -> &'static str {
     // In a real implementation, this would update the backtest engine configuration
     // For now, we'll just log the update
     tracing::info!("Backtest config updated: {:?}", payload);

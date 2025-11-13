@@ -56,8 +56,8 @@ mod tests {
 
     #[test]
     fn test_tracer_creation() {
-        let tracer = Tracer::new().unwrap();
-        assert!(true); // Just testing that we can create a tracer
+        let _tracer = Tracer::new().unwrap();
+        // Just testing that we can create a tracer - no additional assertions needed
     }
 
     #[test]

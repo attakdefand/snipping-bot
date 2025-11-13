@@ -1,0 +1,26 @@
+{
+  "spdxVersion": "SPDX-2.2",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "snipping-bot-sbom",
+  "documentNamespace": "https://example.com/sbom/snipping-bot",
+  "creationInfo": {
+    "creators": [
+      "Tool: syft"
+    ],
+    "created": "2025-11-13T12:15:00Z"
+  },
+  "packages": [
+    {
+      "name": "snipping-bot",
+      "SPDXID": "SPDXRef-Package-snipping-bot",
+      "versionInfo": "1.0.0",
+      "supplier": "Organization: Sniper Bot Team",
+      "downloadLocation": "https://github.com/sniper-bot/snipping-bot",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "copyrightText": "Copyright 2025 Sniper Bot Team"
+    }
+  ]
+}

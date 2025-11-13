@@ -30,3 +30,13 @@ mod localization;
 mod messaging;
 mod payments;
 mod search;
+
+// Add our new test modules
+mod security_test;
+mod backtest_test;
+
+// Add our integration tests
+mod integration_security_tests;
+mod integration_backtest_tests;
+mod integration_risk_enhancements;
+mod core_components_test;

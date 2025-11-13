@@ -1,0 +1,10 @@
+{
+  "payloadType": "application/vnd.in-toto+json",
+  "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjAuMSIsInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Nsc2Euc3BpZGUuaW8vUHJvdmVuYW5jZS92MC4yIiwic3ViamVjdCI6W3sibmFtZSI6InNuaXBwaW5nLWJvdCIsImRpZ2VzdCI6eyJzaGEyNTYiOiJlM2IwYzQ0MzQ2YjU0MzQ0NzU0MzQ1MzQ1MzQ1MzQ1MzQ1MzQ1MzQ1MzQ1MzQ1MzQ1MzQ1MzQ1MzQ1MzQ1MzQifX1dLCJwcmVkaWNhdGUiOnsicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vc2xzYS5zcGlkZS5pby9Qcm92ZW5hbmNlL3YwLjIiLCJzdWJqZWN0IjpbeyJuYW1lIjoic25pcHBpbmctYm90IiwiZGlnZXN0Ijp7InNoYTI1NiI6ImUzYjBjNDQzNDZiNTQzNDQ3NTQzNDUzNDUzNDUzNDUzNDUzNDUzNDUzNDUzNDUzNDUzNDUzNDUzNDUzNDUzNDUzIn19XSwicHJlZGljYXRlIjp7fX19",
+  "signatures": [
+    {
+      "keyid": "SHA256:example-key-id",
+      "sig": "example-signature"
+    }
+  ]
+}

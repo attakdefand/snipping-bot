@@ -1,0 +1,63 @@
+# Compliance Configuration for Snipping Bot
+
+[compliance]
+enabled = true
+
+[jurisdictions]
+# Default jurisdiction rules
+default_allowed_activities = ["spot_trading", "limit_orders"]
+default_prohibited_activities = ["margin_trading", "short_selling", "leverage_trading"]
+
+[jurisdictions.US]
+allowed_activities = ["spot_trading", "limit_orders"]
+prohibited_activities = ["margin_trading", "short_selling", "leverage_trading"]
+reporting_frequency_days = 30
+compliance_officer = "compliance@firm.com"
+
+[jurisdictions.EU]
+allowed_activities = ["spot_trading", "limit_orders"]
+prohibited_activities = ["margin_trading", "short_selling"]
+reporting_frequency_days = 15
+compliance_officer = "compliance-eu@firm.com"
+
+[exchange_tos]
+# Default exchange TOS rules
+default_max_daily_volume_usd = 100000.0
+default_max_trades_per_day = 1000
+default_prohibited_pairs = ["ETH/BTC"]
+default_cooldown_period_seconds = 60
+
+[exchange_tos.binance]
+max_daily_volume_usd = 100000.0
+max_trades_per_day = 1000
+prohibited_pairs = ["ETH/BTC"]
+cooldown_period_seconds = 60
+
+[exchange_tos.coinbase]
+max_daily_volume_usd = 50000.0
+max_trades_per_day = 500
+prohibited_pairs = []
+cooldown_period_seconds = 30
+
+[data_retention]
+days = 365
+enforcement_enabled = true
+storage_paths = ["/var/log/snipping-bot", "/var/data/snipping-bot"]
+verification_frequency_hours = 1
+alert_on_violations = true
+
+[audit_trail]
+enabled = true
+log_level = "INFO"
+retention_days = 365
+encrypt_logs = true
+
+[reporting]
+enabled = true
+frequency_hours = 24
+recipients = ["compliance@firm.com", "audit@firm.com"]
+format = "JSON"
+detailed_findings = true
+
+[monitoring]
+interval_seconds = 3600

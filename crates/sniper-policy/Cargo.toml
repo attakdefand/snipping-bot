@@ -9,3 +9,9 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+chrono = { workspace = true }
+toml = "0.8"
+tempfile = "3.8"
+
+[dev-dependencies]
+tracing-subscriber = "0.3"

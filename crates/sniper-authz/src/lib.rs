@@ -5,8 +5,8 @@
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use tracing::debug;
 use std::collections::{HashMap, HashSet};
+use tracing::debug;
 
 /// User identifier
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -85,11 +85,11 @@ impl AuthzManager {
     /// Assign a role to a user
     pub fn assign_role_to_user(&mut self, user_id: &UserId, role_id: &RoleId) -> Result<()> {
         debug!("Assigning role {} to user {}", role_id.0, user_id.0);
-        
+
         if !self.roles.contains_key(role_id) {
             return Err(anyhow::anyhow!("Role {} not found", role_id.0));
         }
-        
+
         if let Some(user) = self.users.get_mut(user_id) {
             user.roles.insert(role_id.clone());
             Ok(())
@@ -100,8 +100,11 @@ impl AuthzManager {
 
     /// Check if a user has a specific permission
     pub fn user_has_permission(&self, user_id: &UserId, permission_id: &PermissionId) -> bool {
-        debug!("Checking if user {} has permission {}", user_id.0, permission_id.0);
-        
+        debug!(
+            "Checking if user {} has permission {}",
+            user_id.0, permission_id.0
+        );
+
         if let Some(user) = self.users.get(user_id) {
             // Check if any of the user's roles has the permission
             for role_id in &user.roles {
@@ -112,24 +115,24 @@ impl AuthzManager {
                 }
             }
         }
-        
+
         false
     }
 
     /// Get all permissions for a user
     pub fn get_user_permissions(&self, user_id: &UserId) -> Result<HashSet<PermissionId>> {
         debug!("Getting permissions for user {}", user_id.0);
-        
+
         if let Some(user) = self.users.get(user_id) {
             let mut permissions = HashSet::new();
-            
+
             // Collect permissions from all user's roles
             for role_id in &user.roles {
                 if let Some(role) = self.roles.get(role_id) {
                     permissions.extend(role.permissions.iter().cloned());
                 }
             }
-            
+
             Ok(permissions)
         } else {
             Err(anyhow::anyhow!("User {} not found", user_id.0))
@@ -139,7 +142,7 @@ impl AuthzManager {
     /// Get all roles for a user
     pub fn get_user_roles(&self, user_id: &UserId) -> Result<HashSet<RoleId>> {
         debug!("Getting roles for user {}", user_id.0);
-        
+
         if let Some(user) = self.users.get(user_id) {
             Ok(user.roles.clone())
         } else {
@@ -169,13 +172,13 @@ mod tests {
     #[test]
     fn test_permission_management() {
         let mut manager = AuthzManager::new();
-        
+
         let permission = Permission {
             id: PermissionId("read".to_string()),
             name: "Read".to_string(),
             description: Some("Read permission".to_string()),
         };
-        
+
         assert!(manager.add_permission(permission).is_ok());
         assert_eq!(manager.permissions.len(), 1);
     }
@@ -183,14 +186,14 @@ mod tests {
     #[test]
     fn test_role_management() {
         let mut manager = AuthzManager::new();
-        
+
         let role = Role {
             id: RoleId("admin".to_string()),
             permissions: HashSet::new(),
             name: "Administrator".to_string(),
             description: Some("Administrator role".to_string()),
         };
-        
+
         assert!(manager.add_role(role).is_ok());
         assert_eq!(manager.roles.len(), 1);
     }
@@ -198,12 +201,12 @@ mod tests {
     #[test]
     fn test_user_management() {
         let mut manager = AuthzManager::new();
-        
+
         let user = User {
             id: UserId("user1".to_string()),
             roles: HashSet::new(),
         };
-        
+
         assert!(manager.add_user(user).is_ok());
         assert_eq!(manager.users.len(), 1);
     }
@@ -211,7 +214,7 @@ mod tests {
     #[test]
     fn test_role_assignment() {
         let mut manager = AuthzManager::new();
-        
+
         // Add role
         let role = Role {
             id: RoleId("admin".to_string()),
@@ -220,26 +223,30 @@ mod tests {
             description: Some("Administrator role".to_string()),
         };
         manager.add_role(role).unwrap();
-        
+
         // Add user
         let user = User {
             id: UserId("user1".to_string()),
             roles: HashSet::new(),
         };
         manager.add_user(user).unwrap();
-        
+
         // Assign role to user
-        assert!(manager.assign_role_to_user(&UserId("user1".to_string()), &RoleId("admin".to_string())).is_ok());
-        
+        assert!(manager
+            .assign_role_to_user(&UserId("user1".to_string()), &RoleId("admin".to_string()))
+            .is_ok());
+
         // Check user roles
-        let roles = manager.get_user_roles(&UserId("user1".to_string())).unwrap();
+        let roles = manager
+            .get_user_roles(&UserId("user1".to_string()))
+            .unwrap();
         assert!(roles.contains(&RoleId("admin".to_string())));
     }
 
     #[test]
     fn test_permission_check() {
         let mut manager = AuthzManager::new();
-        
+
         // Add permission
         let permission = Permission {
             id: PermissionId("read".to_string()),
@@ -247,7 +254,7 @@ mod tests {
             description: Some("Read permission".to_string()),
         };
         manager.add_permission(permission).unwrap();
-        
+
         // Add role with permission
         let mut permissions = HashSet::new();
         permissions.insert(PermissionId("read".to_string()));
@@ -258,18 +265,23 @@ mod tests {
             description: Some("Reader role".to_string()),
         };
         manager.add_role(role).unwrap();
-        
+
         // Add user
         let user = User {
             id: UserId("user1".to_string()),
             roles: HashSet::new(),
         };
         manager.add_user(user).unwrap();
-        
+
         // Assign role to user
-        manager.assign_role_to_user(&UserId("user1".to_string()), &RoleId("reader".to_string())).unwrap();
-        
+        manager
+            .assign_role_to_user(&UserId("user1".to_string()), &RoleId("reader".to_string()))
+            .unwrap();
+
         // Check permission
-        assert!(manager.user_has_permission(&UserId("user1".to_string()), &PermissionId("read".to_string())));
+        assert!(manager.user_has_permission(
+            &UserId("user1".to_string()),
+            &PermissionId("read".to_string())
+        ));
     }
 }

@@ -1,0 +1,60 @@
+groups:
+  - name: snipping-bot.rules
+    rules:
+      # Trade execution alerts
+      - alert: HighTradeFailureRate
+        expr: rate(sniper_failed_trades_total[5m]) / (rate(sniper_successful_trades_total[5m]) + rate(sniper_failed_trades_total[5m])) > 0.05
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High trade failure rate detected"
+          description: "Trade failure rate is above 5% ({{ $value }}%) for the last 5 minutes"
+
+      - alert: CriticalTradeFailureRate
+        expr: rate(sniper_failed_trades_total[5m]) / (rate(sniper_successful_trades_total[5m]) + rate(sniper_failed_trades_total[5m])) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical trade failure rate detected"
+          description: "Trade failure rate is above 10% ({{ $value }}%) for the last 5 minutes"
+
+      # System health alerts
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% ({{ $value }}%) for the last 5 minutes"
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 1000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 1000MB ({{ $value }}MB)"
+
+      # Risk alerts
+      - alert: HighRiskCheckDenialRate
+        expr: rate(sniper_risk_checks_denied_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High risk check denial rate"
+          description: "Risk checks denied rate is above 10 per minute ({{ $value }})"
+
+      # Signal processing alerts
+      - alert: LowSignalProcessingRate
+        expr: rate(sniper_signals_processed_total[5m]) < 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low signal processing rate"
+          description: "Signal processing rate is below 1 per minute ({{ $value }})"

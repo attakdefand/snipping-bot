@@ -1,0 +1,59 @@
+{
+  "identity_providers": [
+    {
+      "name": "keycloak",
+      "type": "oidc",
+      "issuer_url": "https://keycloak.example.com/realms/sniper-rs",
+      "client_id": "sniper-rs-client",
+      "client_secret": "REPLACE_WITH_ACTUAL_SECRET",
+      "redirect_uri": "http://localhost:8080/callback",
+      "scopes": ["openid", "profile", "email", "roles"],
+      "claims": {
+        "user_id": "sub",
+        "username": "preferred_username",
+        "email": "email",
+        "roles": "roles"
+      }
+    },
+    {
+      "name": "okta",
+      "type": "oidc",
+      "issuer_url": "https://sniper-rs.okta.com/oauth2/default",
+      "client_id": "REPLACE_WITH_ACTUAL_CLIENT_ID",
+      "client_secret": "REPLACE_WITH_ACTUAL_SECRET",
+      "redirect_uri": "http://localhost:8080/callback",
+      "scopes": ["openid", "profile", "email", "groups"],
+      "claims": {
+        "user_id": "sub",
+        "username": "preferred_username",
+        "email": "email",
+        "roles": "groups"
+      }
+    }
+  ],
+  "mfa": {
+    "enabled": true,
+    "required_for_admin": true,
+    "required_for_trading": true,
+    "providers": ["totp", "sms", "email"]
+  },
+  "session": {
+    "max_age": 3600,
+    "refresh_token_lifetime": 86400,
+    "idle_timeout": 1800
+  },
+  "policies": {
+    "password": {
+      "min_length": 12,
+      "require_uppercase": true,
+      "require_lowercase": true,
+      "require_numbers": true,
+      "require_special": true,
+      "expire_days": 90
+    },
+    "lockout": {
+      "max_attempts": 5,
+      "lockout_duration": 300
+    }
+  }
+}
