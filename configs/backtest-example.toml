@@ -1,0 +1,33 @@
+# Example backtest configuration
+
+[run]
+mode = "backtest"
+start = "2023-01-01T00:00:00Z"
+end = "2023-04-01T00:00:00Z"
+symbols = ["ETH/USDT", "BTC/USDT"]
+
+[exec]
+model = "AMMExec"
+latency_ms = { send = 12, venue = 18, ack = 6 }
+slippage = { model = "impact", k = 0.85 }
+fees = { taker_bps = 7.0, maker_bps = 2.0, gas_usd = 0.12 }
+
+[risk]
+max_leverage = 2.0
+max_daily_loss_bps = 150
+max_pos_notional_usd = 50000
+
+[accounting]
+base_ccy = "USD"
+mark = "mid"
+
+[data]
+# Path to historical data
+path = "data/historical"
+format = "parquet" # or csv, json
+
+[portfolio]
+# For portfolio backtesting
+assets = ["ETH/USDT", "BTC/USDT", "ARB/USDT"]
+weights = { "ETH/USDT" = 0.4, "BTC/USDT" = 0.4, "ARB/USDT" = 0.2 }
+rebalance_frequency_days = 7

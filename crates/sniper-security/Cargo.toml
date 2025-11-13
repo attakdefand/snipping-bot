@@ -11,6 +11,7 @@ serde = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 sniper-telemetry = { path = "../sniper-telemetry" }
+sniper-authz = { path = "../sniper-authz" }
 
 [dev-dependencies]
 tokio-test = "0.4"

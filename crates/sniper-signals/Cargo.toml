@@ -9,3 +9,9 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+sniper-core = { version = "0.1.0", path = "../sniper-core" }
+chrono = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }

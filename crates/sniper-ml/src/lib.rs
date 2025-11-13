@@ -1,10 +1,10 @@
 //! Machine Learning module for the sniper bot.
-//! 
+//!
 //! This module provides functionality for integrating ML models for pattern recognition
 //! and predictive analytics in trading signals.
 
-use sniper_core::types::{Signal, TradePlan};
 use serde::{Deserialize, Serialize};
+use sniper_core::types::{Signal, TradePlan};
 
 /// Configuration for ML models
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,31 +27,33 @@ pub struct MlModel {
 impl MlModel {
     /// Create a new ML model
     pub fn new(config: MlConfig) -> Self {
-        Self {
-            config,
-        }
+        Self { config }
     }
-    
+
     /// Process a signal using the ML model
     pub async fn process_signal(&self, signal: &Signal) -> Option<TradePlan> {
         if !self.config.enabled {
             return None;
         }
-        
+
         // In a real implementation, this would:
         // 1. Preprocess the signal data
         // 2. Run the ML model inference
         // 3. Post-process the results
         // 4. Generate a trade plan if confidence is high enough
-        
+
         // Placeholder implementation
         tracing::info!("Processing signal with ML model: {:?}", signal.kind);
-        
+
         // Simulate ML processing
         let confidence = 0.85; // Simulated confidence score
-        
+
         if confidence >= self.config.confidence_threshold {
-            tracing::info!("ML model confidence {} exceeds threshold {}", confidence, self.config.confidence_threshold);
+            tracing::info!(
+                "ML model confidence {} exceeds threshold {}",
+                confidence,
+                self.config.confidence_threshold
+            );
             // Generate a trade plan based on the ML prediction
             Some(TradePlan {
                 chain: signal.chain.clone(),
@@ -73,7 +75,11 @@ impl MlModel {
                 idem_key: format!("ml_plan_{}", signal.seen_at_ms),
             })
         } else {
-            tracing::debug!("ML model confidence {} below threshold {}", confidence, self.config.confidence_threshold);
+            tracing::debug!(
+                "ML model confidence {} below threshold {}",
+                confidence,
+                self.config.confidence_threshold
+            );
             None
         }
     }
@@ -91,9 +97,9 @@ mod tests {
             confidence_threshold: 0.8,
             enabled: true,
         };
-        
+
         let model = MlModel::new(config);
-        
+
         let signal = Signal {
             source: "dex".into(),
             kind: "pair_created".into(),
@@ -106,11 +112,11 @@ mod tests {
             extra: serde_json::json!({"pair": "0xPairAddress"}),
             seen_at_ms: 0,
         };
-        
+
         let plan = model.process_signal(&signal).await;
         assert!(plan.is_some());
     }
-    
+
     #[tokio::test]
     async fn test_ml_model_disabled() {
         let config = MlConfig {
@@ -118,9 +124,9 @@ mod tests {
             confidence_threshold: 0.8,
             enabled: false,
         };
-        
+
         let model = MlModel::new(config);
-        
+
         let signal = Signal {
             source: "dex".into(),
             kind: "pair_created".into(),
@@ -133,7 +139,7 @@ mod tests {
             extra: serde_json::json!({"pair": "0xPairAddress"}),
             seen_at_ms: 0,
         };
-        
+
         let plan = model.process_signal(&signal).await;
         assert!(plan.is_none());
     }

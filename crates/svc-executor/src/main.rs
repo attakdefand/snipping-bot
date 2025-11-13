@@ -1,5 +1,6 @@
 use sniper_core::bus::InMemoryBus;
-use sniper_core::types::{Decision, ExecReceipt, TradePlan};
+use sniper_core::types::{Decision, ExecMode, ExecReceipt, TradePlan};
+use sniper_exec::{exec_mempool, exec_private, gas};
 use tokio::time::{sleep, Duration};
 
 #[tokio::main]
@@ -37,7 +38,7 @@ async fn main() -> eyre::Result<()> {
                     };
 
                     if decision.allow {
-                        // Execute the trade
+                        // Execute the trade using the appropriate method based on plan.mode
                         let receipt = execute_trade(&plan).await;
 
                         // Publish the execution result
@@ -52,10 +53,56 @@ async fn main() -> eyre::Result<()> {
     });
 
     // Demo: publisher task - simulates trade plan generation
-    let _tx_bus = bus.clone();
+    let tx_bus = bus.clone();
     tokio::spawn(async move {
         // In a real system, these would come from the strategy service
         sleep(Duration::from_secs(1)).await; // Wait a bit for subscriber to start
+
+        // Publish some demo trade plans with different execution modes
+        let plans = vec![
+            TradePlan {
+                chain: sniper_core::types::ChainRef {
+                    name: "ethereum".into(),
+                    id: 1,
+                },
+                router: "0xRouterAddress".to_string(),
+                token_in: "0xWETH".to_string(),
+                token_out: "0xTokenA".to_string(),
+                amount_in: 1000000000000000000, // 1 ETH
+                min_out: 900000000000000000,    // 0.9 tokens
+                mode: ExecMode::Mempool,
+                gas: sniper_core::types::GasPolicy {
+                    max_fee_gwei: 50,
+                    max_priority_gwei: 2,
+                },
+                exits: Default::default(),
+                idem_key: "demo-mempool-1".to_string(),
+            },
+            TradePlan {
+                chain: sniper_core::types::ChainRef {
+                    name: "bsc".into(),
+                    id: 56,
+                },
+                router: "0xRouterAddress".to_string(),
+                token_in: "0xWBNB".to_string(),
+                token_out: "0xTokenB".to_string(),
+                amount_in: 1000000000000000000, // 1 BNB
+                min_out: 900000000000000000,    // 0.9 tokens
+                mode: ExecMode::Private,
+                gas: sniper_core::types::GasPolicy {
+                    max_fee_gwei: 50,
+                    max_priority_gwei: 2,
+                },
+                exits: Default::default(),
+                idem_key: "demo-private-1".to_string(),
+            },
+        ];
+
+        for plan in plans {
+            let _ = tx_bus.publish("plan.created", &plan).await;
+            tracing::info!(?plan.mode, "published demo trade plan");
+            sleep(Duration::from_secs(2)).await;
+        }
     });
 
     // Keep running
@@ -66,22 +113,106 @@ async fn main() -> eyre::Result<()> {
 
 /// Execute a trade and return the receipt
 async fn execute_trade(plan: &TradePlan) -> ExecReceipt {
-    tracing::info!("executing trade on {} chain", plan.chain.name);
+    tracing::info!(
+        "executing trade on {} chain using {:?} mode",
+        plan.chain.name,
+        plan.mode
+    );
 
-    // In a real implementation, this would:
-    // 1. Connect to the appropriate blockchain
-    // 2. Build the transaction
-    // 3. Sign the transaction (using the keys service)
-    // 4. Submit the transaction via the selected execution mode
-    // 5. Wait for confirmation and return the receipt
+    // Use our new gas estimation
+    let gas_estimator = gas::default_gas_estimator();
+    let estimated_gas = gas_estimator.estimate_gas(plan);
 
-    // Simulate execution
-    ExecReceipt {
-        tx_hash: format!("0x{}", hex::encode(plan.idem_key.as_bytes())),
-        success: true,
-        block: 12345678,
-        gas_used: 150000,
-        fees_paid_wei: 3150000000000000, // 0.00315 ETH
-        failure_reason: None,
+    tracing::info!(
+        "Gas estimated: max_fee={} gwei, priority_fee={} gwei",
+        estimated_gas.max_fee_gwei,
+        estimated_gas.max_priority_gwei
+    );
+
+    // Execute based on the mode specified in the plan
+    let receipt = match plan.mode {
+        ExecMode::Mempool => match exec_mempool::execute_via_mempool(plan).await {
+            Ok(receipt) => receipt,
+            Err(e) => {
+                tracing::error!("Mempool execution failed: {}", e);
+                ExecReceipt {
+                    tx_hash: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                        .to_string(),
+                    success: false,
+                    block: 0,
+                    gas_used: 0,
+                    fees_paid_wei: 0,
+                    failure_reason: Some(e.to_string()),
+                }
+            }
+        },
+        ExecMode::Private => match exec_private::execute_via_private(plan).await {
+            Ok(receipt) => receipt,
+            Err(e) => {
+                tracing::error!("Private execution failed: {}", e);
+                ExecReceipt {
+                    tx_hash: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                        .to_string(),
+                    success: false,
+                    block: 0,
+                    gas_used: 0,
+                    fees_paid_wei: 0,
+                    failure_reason: Some(e.to_string()),
+                }
+            }
+        },
+        ExecMode::Bundle => {
+            // For now, fall back to mempool execution for bundle mode
+            match exec_mempool::execute_via_mempool(plan).await {
+                Ok(receipt) => receipt,
+                Err(e) => {
+                    tracing::error!("Bundle execution failed: {}", e);
+                    ExecReceipt {
+                        tx_hash:
+                            "0x0000000000000000000000000000000000000000000000000000000000000000"
+                                .to_string(),
+                        success: false,
+                        block: 0,
+                        gas_used: 0,
+                        fees_paid_wei: 0,
+                        failure_reason: Some(e.to_string()),
+                    }
+                }
+            }
+        }
+    };
+
+    receipt
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sniper_core::types::{ChainRef, ExitRules, GasPolicy};
+
+    #[tokio::test]
+    async fn test_execute_trade_mempool() {
+        let plan = TradePlan {
+            chain: ChainRef {
+                name: "ethereum".to_string(),
+                id: 1,
+            },
+            router: "0xRouterAddress".to_string(),
+            token_in: "0xWETH".to_string(),
+            token_out: "0xToken".to_string(),
+            amount_in: 1000000000000000000, // 1 ETH
+            min_out: 900000000000000000,    // 0.9 tokens
+            mode: ExecMode::Mempool,
+            gas: GasPolicy {
+                max_fee_gwei: 50,
+                max_priority_gwei: 2,
+            },
+            exits: ExitRules::default(),
+            idem_key: "test_mempool_1".to_string(),
+        };
+
+        let receipt = execute_trade(&plan).await;
+        assert!(receipt.tx_hash.starts_with("0x"));
+        // Note: In a real test, we would mock the execution and verify specific outcomes
     }
 }

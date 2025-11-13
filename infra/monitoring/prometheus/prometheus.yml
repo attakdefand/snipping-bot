@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/snipping-bot-rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'snipping-bot-dashboard'
+    static_configs:
+      - targets: ['host.docker.internal:3005']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'snipping-bot-analytics'
+    static_configs:
+      - targets: ['host.docker.internal:3003']
+    metrics_path: '/metrics'
+    scrape_interval: 10s

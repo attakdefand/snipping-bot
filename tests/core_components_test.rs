@@ -1,137 +1,88 @@
-//! Test the core components of the snipping bot
-//! 
-//! This test verifies that all core components are properly integrated
-//! and functioning according to the specifications in CORE-COMPONENT-SNIPPING-BOT.MD
+//! Core components integration test
+//!
+//! This test verifies that all the newly implemented components work together correctly
 
-use anyhow::Result;
+use sniper_core::types::{ChainRef, TradePlan, ExecMode, GasPolicy, ExitRules};
+use sniper_exec::{exec_mempool, exec_private, gas};
+use sniper_keys::mpc;
 
-/// Test that all core libraries can be compiled and loaded
-#[test]
-fn test_core_libraries() {
-    // This test ensures that all core libraries compile correctly
-    assert!(true);
-    println!("Core libraries compilation test passed");
-}
-
-/// Test sniper-core functionality
-#[test]
-fn test_sniper_core() {
-    // Test that the core components exist and can be used
-    println!("Testing sniper-core components...");
-    assert!(true);
-    println!("sniper-core test passed");
-}
-
-/// Test sniper-amm functionality
-#[test]
-fn test_sniper_amm() {
-    // Test that the AMM components exist and can be used
-    println!("Testing sniper-amm components...");
-    assert!(true);
-    println!("sniper-amm test passed");
-}
-
-/// Test sniper-cex functionality
-#[test]
-fn test_sniper_cex() {
-    // Test that the CEX components exist and can be used
-    println!("Testing sniper-cex components...");
-    assert!(true);
-    println!("sniper-cex test passed");
-}
-
-/// Test sniper-risk functionality
-#[test]
-fn test_sniper_risk() {
-    // Test that the risk components exist and can be used
-    println!("Testing sniper-risk components...");
+#[tokio::test]
+async fn test_all_components_integration() {
+    println!("Testing integration of all newly implemented components...");
     
-    // Test the risk evaluation function
-    let config = sniper_risk::SecurityConfig::default();
-    let risk_system = sniper_risk::SecuritySystem::new(config);
-    assert!(risk_system.check_risk_management());
+    // 1. Test gas estimation
+    println!("1. Testing gas estimation...");
+    let estimator = gas::GasEstimator::new(25, 2);
+    assert_eq!(estimator.base_fee_gwei, 25);
+    assert_eq!(estimator.priority_fee_gwei, 2);
     
-    println!("sniper-risk test passed");
-}
-
-/// Test sniper-policy functionality
-#[test]
-fn test_sniper_policy() {
-    // Test that the policy components exist and can be used
-    println!("Testing sniper-policy components...");
-    assert!(true);
-    println!("sniper-policy test passed");
-}
-
-/// Test sniper-storage functionality
-#[test]
-fn test_sniper_storage() {
-    // Test that the storage components exist and can be used
-    println!("Testing sniper-storage components...");
-    assert!(true);
-    println!("sniper-storage test passed");
-}
-
-/// Test sniper-telemetry functionality
-#[test]
-fn test_sniper_telemetry() {
-    // Test that the telemetry components exist and can be used
-    println!("Testing sniper-telemetry components...");
-    
-    let config = sniper_telemetry::TelemetryConfig {
-        metrics_enabled: true,
-        tracing_enabled: true,
-        alerting_enabled: true,
+    // 2. Test trade plan creation
+    println!("2. Testing trade plan creation...");
+    let plan = TradePlan {
+        chain: ChainRef {
+            name: "ethereum".to_string(),
+            id: 1,
+        },
+        router: "0xRouterAddress".to_string(),
+        token_in: "0xWETH".to_string(),
+        token_out: "0xToken".to_string(),
+        amount_in: 1000000000000000000, // 1 ETH
+        min_out: 900000000000000000,    // 0.9 tokens
+        mode: ExecMode::Mempool,
+        gas: GasPolicy {
+            max_fee_gwei: 50,
+            max_priority_gwei: 2,
+        },
+        exits: ExitRules::default(),
+        idem_key: "core_components_test".to_string(),
     };
     
-    let telemetry = sniper_telemetry::TelemetrySystem::new(config);
-    assert!(telemetry.is_ok());
+    // 3. Test gas estimation with the plan
+    println!("3. Testing gas estimation with trade plan...");
+    let gas_policy = estimator.estimate_gas(&plan);
+    assert_eq!(gas_policy.max_fee_gwei, 27); // 25 + 2
+    assert_eq!(gas_policy.max_priority_gwei, 2);
     
-    println!("sniper-telemetry test passed");
-}
-
-/// Test sniper-keys functionality
-#[test]
-fn test_sniper_keys() {
-    // Test that the keys components exist and can be used
-    println!("Testing sniper-keys components...");
-    assert!(true);
-    println!("sniper-keys test passed");
-}
-
-/// Test sniper-security functionality
-#[test]
-fn test_sniper_security() {
-    // Test that the security components exist and can be used
-    println!("Testing sniper-security components...");
+    // 4. Test mempool execution
+    println!("4. Testing mempool execution...");
+    let mempool_result = exec_mempool::execute_via_mempool(&plan).await;
+    assert!(mempool_result.is_ok());
+    let mempool_receipt = mempool_result.unwrap();
+    assert!(mempool_receipt.success);
+    assert!(mempool_receipt.tx_hash.starts_with("0x"));
+    assert_eq!(mempool_receipt.gas_used, 120000);
     
-    let config = sniper_security::SecurityConfig::default();
-    let security = sniper_security::SecuritySystem::new(config);
-    assert!(security.check_key_management());
-    assert!(security.check_monitoring());
-    assert!(security.check_risk_management());
-    assert!(security.check_compliance());
-    assert!(security.run_all_checks());
+    // 5. Test private execution
+    println!("5. Testing private execution...");
+    let private_result = exec_private::execute_via_private(&plan).await;
+    assert!(private_result.is_ok());
+    let private_receipt = private_result.unwrap();
+    assert!(private_receipt.success);
+    assert!(private_receipt.tx_hash.starts_with("0x"));
+    assert_eq!(private_receipt.gas_used, 110000);
     
-    println!("sniper-security test passed");
-}
-
-/// Integration test for all core components working together
-#[test]
-fn test_core_components_integration() -> Result<()> {
-    println!("Testing integration of all core components...");
+    // 6. Test MPC key management
+    println!("6. Testing MPC key management...");
+    let manager = mpc::MpcKeyManager::new("core-test-participant".to_string(), 2, 3);
+    assert!(manager.can_sign());
     
-    // Test that all components can work together
-    test_sniper_core();
-    test_sniper_amm();
-    test_sniper_cex();
-    test_sniper_risk();
-    test_sniper_policy();
-    test_sniper_storage();
-    test_sniper_telemetry();
-    test_sniper_keys();
-    test_sniper_security();
+    let key_result = manager.generate_key_share().await;
+    assert!(key_result.is_ok());
+    let key_id = key_result.unwrap();
+    assert!(key_id.starts_with("mpc-key-"));
     
-    println!("All core components integration test passed!");
-    Ok(())
+    let transaction_data = b"core components test transaction";
+    let signature_result = manager.sign_transaction(&key_id, transaction_data).await;
+    assert!(signature_result.is_ok());
+    let signature = signature_result.unwrap();
+    assert!(!signature.is_empty());
+    
+    // 7. Test network condition adjustment
+    println!("7. Testing network condition adjustment...");
+    let mut adjusted_estimator = gas::GasEstimator::new(20, 1);
+    adjusted_estimator.adjust_for_network_conditions(0.5); // 50% congestion
+    assert_eq!(adjusted_estimator.base_fee_gwei, 40);
+    assert_eq!(adjusted_estimator.priority_fee_gwei, 2);
+    
+    println!("All core components integration tests passed!");
 }

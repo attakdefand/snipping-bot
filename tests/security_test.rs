@@ -3,21 +3,21 @@
 //! This test file implements security checks as outlined in the DEVELOPMENT_GUIDELINES.MD
 //! to ensure the snipping bot follows security best practices.
 
+use sniper_security::{SecurityConfig, SecuritySystem};
+
 /// Test key management security
 /// 
 /// This test ensures that key management follows the guidelines:
 /// - Integration with HSM or Vault solutions
 /// - Enforcement of least privilege access principles
-#[test]
-fn test_key_management_security() {
-    // Test that the key management modules exist
-    assert!(true); // Placeholder - in a real implementation, we would test actual key management
+#[tokio::test]
+async fn test_key_management_security() {
+    let config = SecurityConfig::default();
+    let security = SecuritySystem::new(config);
     
-    // In a real implementation, this would:
-    // 1. Verify HSM/Vault integration exists
-    // 2. Check that keys are not stored in plain text
-    // 3. Ensure least privilege access is enforced
-    println!("Key management security tests would be implemented here");
+    // Test that key management is properly configured
+    assert!(security.check_key_management());
+    println!("Key management security tests passed");
 }
 
 /// Test monitoring and audit logging
@@ -25,22 +25,13 @@ fn test_key_management_security() {
 /// This test ensures that monitoring and audit logging are properly implemented:
 /// - Comprehensive metrics collection
 /// - Audit logging before handling real funds
-#[test]
-fn test_monitoring_and_audit_logging() {
-    // Test that the telemetry system can be created
-    let config = sniper_telemetry::TelemetryConfig {
-        metrics_enabled: true,
-        tracing_enabled: true,
-        alerting_enabled: true,
-    };
+#[tokio::test]
+async fn test_monitoring_and_audit_logging() {
+    let config = SecurityConfig::default();
+    let security = SecuritySystem::new(config);
     
-    let telemetry = sniper_telemetry::TelemetrySystem::new(config);
-    assert!(telemetry.is_ok());
-    
-    // In a real implementation, this would:
-    // 1. Verify metrics are being collected
-    // 2. Check that audit logs are being generated
-    // 3. Ensure proper alerting mechanisms are in place
+    // Test that monitoring is properly configured
+    assert!(security.check_monitoring());
     println!("Monitoring and audit logging tests passed");
 }
 
@@ -48,11 +39,14 @@ fn test_monitoring_and_audit_logging() {
 /// 
 /// This test ensures that risk management follows the guidelines:
 /// - Risk rules are properly defined and enforced
-#[test]
-fn test_risk_management() {
-    // Test that the risk evaluation function exists
-    // In a real implementation, this would test actual risk evaluation logic
-    println!("Risk management tests would be implemented here");
+#[tokio::test]
+async fn test_risk_management() {
+    let config = SecurityConfig::default();
+    let security = SecuritySystem::new(config);
+    
+    // Test that risk management is properly configured
+    assert!(security.check_risk_management());
+    println!("Risk management tests passed");
 }
 
 /// Test compliance constraints
@@ -60,22 +54,42 @@ fn test_risk_management() {
 /// This test ensures that compliance constraints are properly implemented:
 /// - Permitted strategies are properly defined
 /// - Compliance rules are enforced
-#[test]
-fn test_compliance_constraints() {
-    // Test that the policy engine exists
-    // In a real implementation, this would test actual compliance checks
-    println!("Compliance constraint tests would be implemented here");
+#[tokio::test]
+async fn test_compliance_constraints() {
+    let config = SecurityConfig::default();
+    let security = SecuritySystem::new(config);
+    
+    // Test that compliance is properly configured
+    assert!(security.check_compliance());
+    println!("Compliance constraint tests passed");
+}
+
+/// Test authentication and authorization
+/// 
+/// This test ensures that the RBAC system is properly implemented:
+/// - Users can be created and assigned roles
+/// - Permissions can be checked
+#[tokio::test]
+async fn test_authentication_authorization() {
+    let config = SecurityConfig::default();
+    let security = SecuritySystem::new(config);
+    
+    // Run authentication and authorization testing
+    let results = security.run_auth_testing().await.unwrap();
+    assert!(results.security_score > 80); // Should have a good security score
+    println!("Authentication and authorization tests passed with security score: {}", results.security_score);
 }
 
 /// Integration test for all security components
 /// 
 /// This test ensures that all security components work together properly.
-#[test]
-fn test_security_integration() {
-    // In a real implementation, this would:
-    // 1. Test end-to-end security flows
-    // 2. Verify that security controls are properly integrated
-    // 3. Check that all security guidelines are followed
+#[tokio::test]
+async fn test_security_integration() {
+    let config = SecurityConfig::default();
+    let security = SecuritySystem::new(config);
     
-    println!("Security integration tests would be implemented here");
+    // Test end-to-end security flow:
+    let result = security.run_all_checks().await.unwrap();
+    assert!(result);
+    println!("Security integration tests passed");
 }

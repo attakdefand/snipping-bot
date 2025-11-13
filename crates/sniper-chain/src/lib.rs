@@ -1,6 +1,6 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod contracts;
+pub mod mev;
+pub mod providers;
 
 #[cfg(test)]
 mod tests {
@@ -8,7 +8,9 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+        // Test that modules can be imported
+        let _provider_manager = providers::ProviderManager::new();
+        let _mev_relay_manager = mev::MevRelayManager::new();
+        let _contract_manager = contracts::ContractManager::new();
     }
 }

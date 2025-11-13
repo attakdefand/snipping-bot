@@ -3,11 +3,16 @@
 //! This module provides functionality for evaluating trades and determining if they
 //! meet the configured risk criteria.
 
+pub mod advanced;
+pub mod correlation;
 pub mod decide;
+pub mod enhanced_correlation;
 pub mod honeypot;
 pub mod limits;
 pub mod lp_quality;
+pub mod market_condition_risk;
 pub mod owner_powers;
+pub mod unified_risk;
 
 use sniper_core::types::{Decision, TradePlan};
 

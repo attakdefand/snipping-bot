@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_router_creation() {
-        let router = Router::new();
+        let _router = Router::new();
         assert!(true); // Just testing that we can create a router
     }
 

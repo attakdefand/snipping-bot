@@ -1,5 +1,5 @@
 //! Advanced risk controls and position sizing methods.
-//! 
+//!
 //! This module provides sophisticated risk management capabilities including
 //! advanced position sizing, portfolio-level risk controls, and dynamic risk adjustment.
 
@@ -25,19 +25,17 @@ pub enum PositionSizingMethod {
     /// Fixed percentage of capital
     FixedPercentage { percentage: f64 },
     /// Volatility-adjusted position sizing
-    VolatilityAdjusted { 
-        target_volatility: f64, 
-        max_position_size: f64 
+    VolatilityAdjusted {
+        target_volatility: f64,
+        max_position_size: f64,
     },
     /// Kelly criterion with cap
-    KellyCriterion { 
-        kelly_multiplier: f64, 
-        max_position_size: f64 
+    KellyCriterion {
+        kelly_multiplier: f64,
+        max_position_size: f64,
     },
     /// Risk parity approach
-    RiskParity { 
-        target_risk_contribution: f64 
-    },
+    RiskParity { target_risk_contribution: f64 },
 }
 
 /// Portfolio-level risk controls
@@ -142,7 +140,7 @@ impl AdvancedRiskAnalyzer {
     pub fn new(config: AdvancedRiskConfig) -> Self {
         Self { config }
     }
-    
+
     /// Analyze a proposed trade with advanced risk controls
     pub fn analyze_trade(
         &self,
@@ -165,16 +163,13 @@ impl AdvancedRiskAnalyzer {
                 },
             };
         }
-        
+
         // Calculate dynamic risk multiplier based on current drawdown
         let risk_multiplier = self.calculate_dynamic_risk_multiplier(portfolio_state);
-        
+
         // Check portfolio-level constraints
-        let portfolio_exposure = self.calculate_portfolio_exposure(
-            proposed_size,
-            portfolio_state
-        );
-        
+        let portfolio_exposure = self.calculate_portfolio_exposure(proposed_size, portfolio_state);
+
         if portfolio_exposure > self.config.portfolio_controls.max_portfolio_exposure_pct {
             return AdvancedRiskResult {
                 allowed: false,
@@ -182,8 +177,7 @@ impl AdvancedRiskAnalyzer {
                 risk_adjusted_size: 0.0,
                 reasons: vec![format!(
                     "Portfolio exposure {:.2}% exceeds maximum {:.2}%",
-                    portfolio_exposure,
-                    self.config.portfolio_controls.max_portfolio_exposure_pct
+                    portfolio_exposure, self.config.portfolio_controls.max_portfolio_exposure_pct
                 )],
                 metrics: RiskMetrics {
                     portfolio_exposure_pct: portfolio_exposure,
@@ -194,13 +188,11 @@ impl AdvancedRiskAnalyzer {
                 },
             };
         }
-        
+
         // Check correlation with existing positions
-        let position_correlation = self.calculate_position_correlation(
-            proposed_asset,
-            portfolio_state
-        );
-        
+        let position_correlation =
+            self.calculate_position_correlation(proposed_asset, portfolio_state);
+
         if position_correlation > self.config.portfolio_controls.max_position_correlation {
             return AdvancedRiskResult {
                 allowed: false,
@@ -208,8 +200,7 @@ impl AdvancedRiskAnalyzer {
                 risk_adjusted_size: 0.0,
                 reasons: vec![format!(
                     "Position correlation {:.2} exceeds maximum {:.2}",
-                    position_correlation,
-                    self.config.portfolio_controls.max_position_correlation
+                    position_correlation, self.config.portfolio_controls.max_position_correlation
                 )],
                 metrics: RiskMetrics {
                     portfolio_exposure_pct: portfolio_exposure,
@@ -220,9 +211,11 @@ impl AdvancedRiskAnalyzer {
                 },
             };
         }
-        
+
         // Check concurrent position limits
-        if portfolio_state.positions.len() >= self.config.portfolio_controls.max_concurrent_positions {
+        if portfolio_state.positions.len()
+            >= self.config.portfolio_controls.max_concurrent_positions
+        {
             return AdvancedRiskResult {
                 allowed: false,
                 max_position_size: 0.0,
@@ -240,17 +233,14 @@ impl AdvancedRiskAnalyzer {
                 },
             };
         }
-        
+
         // Calculate maximum position size based on sizing method
-        let max_position_size = self.calculate_max_position_size(
-            proposed_asset,
-            portfolio_state,
-            risk_multiplier
-        );
-        
+        let max_position_size =
+            self.calculate_max_position_size(proposed_asset, portfolio_state, risk_multiplier);
+
         // Apply risk-adjusted sizing
         let risk_adjusted_size = proposed_size.min(max_position_size);
-        
+
         AdvancedRiskResult {
             allowed: true,
             max_position_size,
@@ -263,49 +253,52 @@ impl AdvancedRiskAnalyzer {
                 risk_contribution: self.calculate_risk_contribution(
                     proposed_asset,
                     proposed_size,
-                    portfolio_state
+                    portfolio_state,
                 ),
                 risk_multiplier,
             },
         }
     }
-    
+
     /// Calculate dynamic risk multiplier based on current drawdown
     fn calculate_dynamic_risk_multiplier(&self, portfolio_state: &PortfolioState) -> f64 {
         if !self.config.dynamic_adjustment.enabled {
             return 1.0;
         }
-        
+
         let drawdown = portfolio_state.current_drawdown_pct;
-        
+
         if drawdown >= self.config.dynamic_adjustment.drawdown_threshold_pct {
             self.config.dynamic_adjustment.risk_reduction_factor
         } else if drawdown <= self.config.dynamic_adjustment.recovery_threshold_pct {
             1.0 // Full risk restored
         } else {
             // Linear interpolation between recovery and reduction thresholds
-            let range = self.config.dynamic_adjustment.drawdown_threshold_pct - 
-                       self.config.dynamic_adjustment.recovery_threshold_pct;
-            let progress = (drawdown - self.config.dynamic_adjustment.recovery_threshold_pct) / range;
+            let range = self.config.dynamic_adjustment.drawdown_threshold_pct
+                - self.config.dynamic_adjustment.recovery_threshold_pct;
+            let progress =
+                (drawdown - self.config.dynamic_adjustment.recovery_threshold_pct) / range;
             1.0 - (progress * (1.0 - self.config.dynamic_adjustment.risk_reduction_factor))
         }
     }
-    
+
     /// Calculate portfolio exposure after proposed trade
-    fn calculate_portfolio_exposure(&self, proposed_size: f64, portfolio_state: &PortfolioState) -> f64 {
-        let current_exposure: f64 = portfolio_state.positions.iter()
-            .map(|p| p.size_usd)
-            .sum();
+    fn calculate_portfolio_exposure(
+        &self,
+        proposed_size: f64,
+        portfolio_state: &PortfolioState,
+    ) -> f64 {
+        let current_exposure: f64 = portfolio_state.positions.iter().map(|p| p.size_usd).sum();
         let total_exposure = current_exposure + proposed_size;
         (total_exposure / portfolio_state.portfolio_value) * 100.0
     }
-    
+
     /// Calculate correlation with existing positions
     fn calculate_position_correlation(&self, asset: &str, portfolio_state: &PortfolioState) -> f64 {
         if portfolio_state.positions.is_empty() {
             return 0.0;
         }
-        
+
         let mut correlations = Vec::new();
         for position in &portfolio_state.positions {
             if let Some(asset_correlations) = portfolio_state.correlations.get(asset) {
@@ -314,14 +307,14 @@ impl AdvancedRiskAnalyzer {
                 }
             }
         }
-        
+
         if correlations.is_empty() {
             0.0
         } else {
             correlations.iter().sum::<f64>() / correlations.len() as f64
         }
     }
-    
+
     /// Calculate maximum position size based on sizing method
     fn calculate_max_position_size(
         &self,
@@ -332,42 +325,47 @@ impl AdvancedRiskAnalyzer {
         match &self.config.position_sizing {
             PositionSizingMethod::FixedPercentage { percentage } => {
                 portfolio_state.portfolio_value * percentage / 100.0 * risk_multiplier
-            },
-            PositionSizingMethod::VolatilityAdjusted { 
-                target_volatility, 
-                max_position_size 
+            }
+            PositionSizingMethod::VolatilityAdjusted {
+                target_volatility,
+                max_position_size,
             } => {
                 let asset_volatility = self.get_asset_volatility(asset, portfolio_state);
                 if asset_volatility > 0.0 {
-                    let size = (target_volatility / asset_volatility) * portfolio_state.portfolio_value * risk_multiplier;
+                    let size = (target_volatility / asset_volatility)
+                        * portfolio_state.portfolio_value
+                        * risk_multiplier;
                     size.min(portfolio_state.portfolio_value * max_position_size / 100.0)
                 } else {
                     portfolio_state.portfolio_value * max_position_size / 100.0 * risk_multiplier
                 }
-            },
-            PositionSizingMethod::KellyCriterion { 
-                kelly_multiplier, 
-                max_position_size 
+            }
+            PositionSizingMethod::KellyCriterion {
+                kelly_multiplier,
+                max_position_size,
             } => {
                 // Simplified Kelly - in practice this would use actual edge and odds
                 let kelly_fraction = 0.1; // Placeholder
-                let size = kelly_fraction * kelly_multiplier * portfolio_state.portfolio_value * risk_multiplier;
+                let size = kelly_fraction
+                    * kelly_multiplier
+                    * portfolio_state.portfolio_value
+                    * risk_multiplier;
                 size.min(portfolio_state.portfolio_value * max_position_size / 100.0)
-            },
-            PositionSizingMethod::RiskParity { 
-                target_risk_contribution 
+            }
+            PositionSizingMethod::RiskParity {
+                target_risk_contribution,
             } => {
                 // Simplified risk parity - in practice this would be more complex
                 portfolio_state.portfolio_value * target_risk_contribution / 100.0 * risk_multiplier
-            },
+            }
         }
     }
-    
+
     /// Get volatility for an asset
     fn get_asset_volatility(&self, asset: &str, portfolio_state: &PortfolioState) -> f64 {
         *portfolio_state.volatility_data.get(asset).unwrap_or(&0.0)
     }
-    
+
     /// Calculate risk contribution of a position
     fn calculate_risk_contribution(
         &self,
@@ -377,15 +375,17 @@ impl AdvancedRiskAnalyzer {
     ) -> f64 {
         let asset_volatility = self.get_asset_volatility(asset, portfolio_state);
         let position_risk = size * asset_volatility;
-        
+
         if portfolio_state.positions.is_empty() {
             return position_risk;
         }
-        
-        let total_portfolio_risk: f64 = portfolio_state.positions.iter()
+
+        let total_portfolio_risk: f64 = portfolio_state
+            .positions
+            .iter()
             .map(|p| p.size_usd * p.volatility)
             .sum();
-            
+
         if total_portfolio_risk > 0.0 {
             (position_risk / total_portfolio_risk) * 100.0
         } else {
@@ -416,9 +416,9 @@ mod tests {
                 recovery_threshold_pct: 1.0,
             },
         };
-        
+
         let analyzer = AdvancedRiskAnalyzer::new(config);
-        
+
         let portfolio_state = PortfolioState {
             portfolio_value: 100000.0,
             unrealized_pnl: 0.0,
@@ -427,15 +427,15 @@ mod tests {
             volatility_data: HashMap::new(),
             correlations: HashMap::new(),
         };
-        
+
         let result = analyzer.analyze_trade("ETH", 1000.0, &portfolio_state);
-        
+
         assert!(result.allowed);
         assert!(result.risk_adjusted_size > 0.0);
         // With 2% drawdown and thresholds at 1% and 5%, multiplier should be between 0.5 and 1.0
         assert!(result.metrics.risk_multiplier >= 0.5 && result.metrics.risk_multiplier <= 1.0);
     }
-    
+
     #[test]
     fn test_dynamic_risk_multiplier() {
         let config = AdvancedRiskConfig {
@@ -454,9 +454,9 @@ mod tests {
                 recovery_threshold_pct: 1.0,
             },
         };
-        
+
         let analyzer = AdvancedRiskAnalyzer::new(config);
-        
+
         let mut portfolio_state = PortfolioState {
             portfolio_value: 100000.0,
             unrealized_pnl: 0.0,
@@ -465,18 +465,27 @@ mod tests {
             volatility_data: HashMap::new(),
             correlations: HashMap::new(),
         };
-        
+
         // Test normal conditions
-        assert_eq!(analyzer.calculate_dynamic_risk_multiplier(&portfolio_state), 1.0);
-        
+        assert_eq!(
+            analyzer.calculate_dynamic_risk_multiplier(&portfolio_state),
+            1.0
+        );
+
         // Test at drawdown threshold
         portfolio_state.current_drawdown_pct = 5.0;
-        assert_eq!(analyzer.calculate_dynamic_risk_multiplier(&portfolio_state), 0.5);
-        
+        assert_eq!(
+            analyzer.calculate_dynamic_risk_multiplier(&portfolio_state),
+            0.5
+        );
+
         // Test at recovery threshold
         portfolio_state.current_drawdown_pct = 1.0;
-        assert_eq!(analyzer.calculate_dynamic_risk_multiplier(&portfolio_state), 1.0);
-        
+        assert_eq!(
+            analyzer.calculate_dynamic_risk_multiplier(&portfolio_state),
+            1.0
+        );
+
         // Test midpoint (3% drawdown between 1% recovery and 5% threshold)
         portfolio_state.current_drawdown_pct = 3.0;
         let multiplier = analyzer.calculate_dynamic_risk_multiplier(&portfolio_state);

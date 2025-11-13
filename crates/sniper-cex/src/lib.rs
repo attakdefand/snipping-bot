@@ -182,13 +182,13 @@ mod tests {
         let sell = OrderSide::Sell;
 
         match buy {
-            OrderSide::Buy => assert!(true),
-            OrderSide::Sell => assert!(false),
+            OrderSide::Buy => {} // Expected match
+            OrderSide::Sell => panic!("Expected buy order"),
         }
 
         match sell {
-            OrderSide::Buy => assert!(false),
-            OrderSide::Sell => assert!(true),
+            OrderSide::Buy => panic!("Expected sell order"),
+            OrderSide::Sell => {} // Expected match
         }
     }
 }

@@ -1,14 +1,16 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! Signals module for the sniper bot.
+//!
+//! This module provides functionality for detecting and processing various types of signals
+//! from on-chain events, off-chain data sources, and social media.
+
+pub mod offchain;
+pub mod onchain;
+pub mod social;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+        assert_eq!(2 + 2, 4);
     }
 }
