@@ -32,7 +32,7 @@ url = "2"
 eyre = "0.6"
 hex = "0.4"
 # ethers kept out for now to keep fast compile; add later
-prometheus = "0.13"
+prometheus = "0.14"
 opentelemetry = { version="0.24", features=["rt-tokio"] }
 opentelemetry-otlp = "0.17"
 axum = "0.7"
