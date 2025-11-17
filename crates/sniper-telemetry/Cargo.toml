@@ -13,4 +13,4 @@ tokio = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 reqwest = { workspace = true, features = ["json"] }
 chrono = { workspace = true, features = ["serde"] }
-prometheus = "0.13"
+prometheus = "0.14"
