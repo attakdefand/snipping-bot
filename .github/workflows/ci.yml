@@ -30,7 +30,7 @@ jobs:
       rust-version: ${{ steps.set-toolchain.outputs.rust-version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Rust toolchain (stable) and components
         id: set-toolchain
@@ -45,7 +45,7 @@ jobs:
     needs: setup-toolchain
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Cache Cargo registry & target
         uses: actions/cache@v4
         with:
@@ -78,7 +78,7 @@ jobs:
     needs: setup-toolchain
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run cargo fmt (check)
         run: |
           rustup component add rustfmt || true
@@ -92,7 +92,7 @@ jobs:
     needs: [setup-toolchain, fmt_clippy]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Cache cargo registry & target
         uses: actions/cache@v4
         with:
@@ -108,7 +108,7 @@ jobs:
     needs: [setup-toolchain]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Cargo check
         run: cargo check --workspace --all-features
 
@@ -127,7 +127,7 @@ jobs:
     env:
       REDIS_URL: redis://127.0.0.1:6379
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Wait for Redis to be ready
         run: |
           for i in $(seq 1 20); do

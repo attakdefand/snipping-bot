@@ -27,7 +27,7 @@ jobs:
   compliance_check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up PowerShell
         run: |
@@ -50,7 +50,7 @@ jobs:
   security_layer_1_governance:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Check policy documents
         run: |
@@ -67,7 +67,7 @@ jobs:
   security_layer_2_threat_modeling:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Check threat modeling artifacts
         run: |
@@ -79,7 +79,7 @@ jobs:
   security_layer_3_sdlc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -103,7 +103,7 @@ jobs:
   security_layer_4_iam:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Check IAM artifacts
         run: |
@@ -118,7 +118,7 @@ jobs:
   security_layer_5_secrets:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Check secrets management
         run: |
@@ -134,7 +134,7 @@ jobs:
   security_layer_10_containers:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Check container security
         run: |
@@ -154,7 +154,7 @@ jobs:
   security_layer_13_app_security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -181,7 +181,7 @@ jobs:
   security_layer_20_observability:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Check observability configs
         run: |
@@ -195,7 +195,7 @@ jobs:
     needs: [compliance_check, security_layer_1_governance, security_layer_2_threat_modeling, security_layer_3_sdlc, security_layer_4_iam, security_layer_5_secrets, security_layer_10_containers, security_layer_13_app_security, security_layer_20_observability]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Create summary report
         run: |
